@@ -2,6 +2,7 @@ from skimage.io import imread
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+from skimage.restoration import estimate_sigma
 import os
 
 
@@ -12,6 +13,7 @@ def cai_filter(image):
     w = image.shape[1]
     print(h, "x", w)
     print(h*w, "pixels")
+    size = h*w
     cai_diff = np.zeros_like(image)  # Another clone just for the affected pixels
 
     print("Starting loop")
@@ -20,9 +22,13 @@ def cai_filter(image):
 
     h = int(h)
     w = int(w)
-    
-    for y in range(0, h):         # for all pixels in y axis
-        for x in range(0, w):     # for all pixels in x axis
+    for y in range(0, 4032):         # for all pixels in y axis
+        for x in range(0, 3024):     # for all pixels in x axis
+
+            progress = round((j / size) * 100, 1)
+            progressbar = int(progress / 4)
+            print('\r|{}|{}%'.format(("█" * progressbar), progress), end="", flush=True)
+            
             try:
                 n = image[y - 1, x] # North, east, south, west pixels
                 e = image[y, x + 1]
@@ -76,11 +82,12 @@ def cai_filter(image):
 
 def calc_sigma(image):
     d = image
-    m = 9
+    m = 3
     sigma_0 = 9
     sigmage = np.zeros_like(d)
     h = d.shape[0]               # Find out heigh x width for the loop
     w = d.shape[1]
+    size = h*w
 
     print("Calculating sigma image")
     i = 0
@@ -89,15 +96,31 @@ def calc_sigma(image):
     h = int(h)
     w = int(w)
     
-    for y in range(0, h):         # for all pixels in y axis
-        for x in range(0, w):     # for all pixels in x axis
+    for y in range(0, 4032):         # for all pixels in y axis
+        for x in range(0, 3024):     # for all pixels in x axis
 
-            sigsum = (1/m)+((d[y, x]^2)-sigma_0)    # According to the formulas in Wu et al.
+            progress = round((j / size) * 100, 1)
+            progressbar = int(progress / 4)
+            print('\r|{}|{}%'.format(("█" * progressbar), progress), end="", flush=True)
+
+            #Sigsum here. Need to read up more on it from source[3] in Wu et al.
+            #http://ws.binghamton.edu/fridrich/Research/double.pdf
+
+            #for now using est_sigma() which uses estimate_sigma() from skimage
+            #that uses D. L. Donoho and I. M. Johnstone. “Ideal spatial adaptation by wavelet shrinkage.” 
+            #Biometrika 81.3 (1994): 425-455. DOI:10.1093/biomet/81.3.425
+            #http://scikit-image.org/docs/dev/api/skimage.restoration.html#skimage.restoration.estimate_sigma
+
             sigmas=(0, sigsum)
             px = max(sigmas)
             sigmage[y, x] = px
 
     return sigmage
+
+def est_sigma(image):
+
+    sigma_est = estimate_sigma(image, multichannel=True, average_sigmas=True)
+    return sigma_est
 
 def wavelet(dimage, sigmage):
     d = dimage
@@ -107,6 +130,7 @@ def wavelet(dimage, sigmage):
     wav_image = np.zeros_like(d) # create an empty image with the same dimensions
     h = d.shape[0]               # Find out heigh x width for the loop
     w = d.shape[1]
+    size = h*w
 
     print("Wavelet transform")
     i = 0
@@ -115,11 +139,15 @@ def wavelet(dimage, sigmage):
     h = int(h)
     w = int(w)
     
-    for y in range(0, h):         # for all pixels in y axis
-        for x in range(0, w):     # for all pixels in x axis
+    for y in range(0, 4032):         # for all pixels in y axis
+        for x in range(0, 3024):     # for all pixels in x axis
 
+            progress = round((j / size) * 100, 1)
+            progressbar = int(progress / 4)
+            print('\r|{}|{}%'.format(("█" * progressbar), progress), end="", flush=True)
+            
             d_px = d[y, x]          
-            sigma_div = sigma_0/(sigma[y, x] + sigma_0) # According to the formulas in Wu et al.
+            sigma_div = sigma_0/(sigma + sigma_0) # According to the formulas in Wu et al.
             px = d_px * sigma_div                       # link here later(Or check wiki)
             wav_image[y, x] = px
 
@@ -130,8 +158,6 @@ def get_spn(wav_image):
     average = wav_image[wav_image!=0].mean()    #average all the noise and add them
     spn = average + wav_image
     return spn
-
-
 
 
 def crop_center(img, cropx, cropy):
@@ -168,13 +194,16 @@ if __name__ == "__main__":
         d_image = cv2.subtract(cai, cropped)
         plt.imsave('3_D_image.png', d_image, cmap="gray")
 
-        sig_image = calc_sigma(d_image)
+        sig_image = est_sigma(d_image)
         plt.imsave('4_Sig_image.png', sig_image, cmap="gray")
 
-        Wav_image = wavelet(sig_image, d_image)
-        plt.imsave('5_Wav_image.png', 5_Wav_image, cmap="gray")
+        #sig_image = calc_sigma(d_image)
+        #plt.imsave('4_Sig_image.png', sig_image, cmap="gray")
 
-        SPN_image = get_spn(SPN_image, d_image)
-        plt.imsave('6_SPN_image.png', SPN_image, cmap="gray")
+        wav_image = wavelet(sig_image, d_image)
+        plt.imsave('5_Wav_image.png', wav_image, cmap="gray")
+
+        spn_image = get_spn(wav_image, d_image)
+        plt.imsave('6_SPN_image.png', spn_image, cmap="gray")
     else:
         print("file does not exist")
