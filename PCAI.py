@@ -21,9 +21,9 @@ def cai_filter(image):
 
     h = int(h)
     w = int(w)
-
-    for y in range(0, h):
-        for x in range(0, w):
+    
+    for y in range(0, 500):
+        for x in range(0, 500):
             try:
                 n = image[y - 1, x]
                 e = image[y, x + 1]
@@ -35,7 +35,7 @@ def cai_filter(image):
                 s = image[y, x]
                 w = image[y, x]
 
-            cai_array = [n, s, e, w]
+            cai_array = [n, e, s, w]
 
             n = int(n)
             e = int(e)
