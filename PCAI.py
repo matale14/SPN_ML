@@ -22,8 +22,8 @@ def cai_filter(image):
 
     h = int(h)
     w = int(w)
-    for y in range(0, 4032):         # for all pixels in y axis
-        for x in range(0, 3024):     # for all pixels in x axis
+    for y in range(0, 500):         # for all pixels in y axis
+        for x in range(0, 500):     # for all pixels in x axis
 
             progress = round((j / size) * 100, 1)
             progressbar = int(progress / 4)
@@ -46,6 +46,7 @@ def cai_filter(image):
             e = int(e)
             s = int(s)
             w = int(w)
+
             if (np.max(cai_array) - np.min(cai_array)) <= 20:       # If the max number of the neighbouring pixels are less than or equal to
                 px = np.mean(cai_array)                             # 20 in value(0-255) then just set the pixel to the mean
             elif (np.absolute(e - w) - np.absolute(n - s)) > 20:    # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
@@ -74,7 +75,7 @@ def cai_filter(image):
             print("n-s - e-w:", np.absolute(n - s) - np.absolute(e - w))
             print("median:", np.median(cai_array))
             """
-
+    print()
     print(i, "Values changed out of:", j)
     print("CAI complete")
     plt.imsave('99_CAI_diff.png', cai_diff, cmap="gray")
@@ -96,8 +97,8 @@ def calc_sigma(image):
     h = int(h)
     w = int(w)
     
-    for y in range(0, 4032):         # for all pixels in y axis
-        for x in range(0, 3024):     # for all pixels in x axis
+    for y in range(0, 500):         # for all pixels in y axis
+        for x in range(0, 500):     # for all pixels in x axis
 
             progress = round((j / size) * 100, 1)
             progressbar = int(progress / 4)
@@ -118,8 +119,8 @@ def calc_sigma(image):
     return sigmage
 
 def est_sigma(image):
-
-    sigma_est = estimate_sigma(image, multichannel=True, average_sigmas=True)
+    dimage = image
+    sigma_est = estimate_sigma(dimage, multichannel=True, average_sigmas=True)
     return sigma_est
 
 def wavelet(dimage, sigmage):
@@ -139,8 +140,8 @@ def wavelet(dimage, sigmage):
     h = int(h)
     w = int(w)
     
-    for y in range(0, 4032):         # for all pixels in y axis
-        for x in range(0, 3024):     # for all pixels in x axis
+    for y in range(0, 500):         # for all pixels in y axis
+        for x in range(0, 500):     # for all pixels in x axis
 
             progress = round((j / size) * 100, 1)
             progressbar = int(progress / 4)
@@ -185,7 +186,7 @@ if __name__ == "__main__":
         original = cv2.imread(img_path, 0)                  # the 0 means read as grayscale
         plt.imsave('0_Original.png', original, cmap="gray") # cmap="gray" means save as grayscale
 
-        cropped = crop_center(original, 0, 0)
+        cropped = crop_center(original, 500, 500)
         plt.imsave('1_Cropped.png', cropped, cmap="gray") 
 
         cai = cai_filter(cropped)
@@ -195,7 +196,7 @@ if __name__ == "__main__":
         plt.imsave('3_D_image.png', d_image, cmap="gray")
 
         sig_image = est_sigma(d_image)
-        plt.imsave('4_Sig_image.png', sig_image, cmap="gray")
+        #plt.imsave('4_Sig_image.png', sig_image, cmap="gray")
 
         #sig_image = calc_sigma(d_image)
         #plt.imsave('4_Sig_image.png', sig_image, cmap="gray")
