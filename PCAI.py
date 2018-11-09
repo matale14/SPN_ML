@@ -7,13 +7,12 @@ import os
 
 def cai_filter(image):
 
-    # grab the image dimensions
-    cai_image = np.zeros_like(image)
-    h = image.shape[0]
+    cai_image = np.zeros_like(image) # create an empty image with the same dimensions
+    h = image.shape[0]               # Find out heigh x width for the loop
     w = image.shape[1]
     print(h, "x", w)
     print(h*w, "pixels")
-    cai_diff = np.zeros_like(image)
+    cai_diff = np.zeros_like(image)  # Another clone just for the affected pixels
 
     print("Starting loop")
     i = 0
@@ -22,10 +21,10 @@ def cai_filter(image):
     h = int(h)
     w = int(w)
     
-    for y in range(0, 500):
-        for x in range(0, 500):
+    for y in range(0, 500):         # for all pixels in y axis
+        for x in range(0, 500):     # for all pixels in x axis
             try:
-                n = image[y - 1, x]
+                n = image[y - 1, x] # North, east, south, west pixels
                 e = image[y, x + 1]
                 s = image[y + 1, x]
                 w = image[y, x - 1]
@@ -41,23 +40,23 @@ def cai_filter(image):
             e = int(e)
             s = int(s)
             w = int(w)
-            if (np.max(cai_array) - np.min(cai_array)) <= 20:
-                px = np.mean(cai_array)
-            elif (np.absolute(e - w) - np.absolute(n - s)) > 20:
-                px = (n + s) / 2
+            if (np.max(cai_array) - np.min(cai_array)) <= 20:       # If the max number of the neighbouring pixels are less than or equal to
+                px = np.mean(cai_array)                             # 20 in value(0-255) then just set the pixel to the mean
+            elif (np.absolute(e - w) - np.absolute(n - s)) > 20:    # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
+                px = (n + s) / 2                                    # the value is northern + southern pixel divided by 2
             elif (np.absolute(n - s) - np.absolute(e - w)) > 20:
                 px = (e + w) / 2
             else:
-                px = np.median(cai_array)
+                px = np.median(cai_array)                           # Median is backup. Median just selects the item that is most in the middle.
 
             px = int(px)
 
 
-            if image[y, x] != int(px):
+            if image[y, x] != int(px):      # If a pixel changes value, count it and apply in the cai_diff image
                 cai_diff[y, x] = int(px)
                 i += 1
             j += 1
-            cai_image[y, x] = px
+            cai_image[y, x] = px            # Set the value of the current pixel to px. 
 
             """
             Debug prints
@@ -105,5 +104,7 @@ if __name__ == "__main__":
         plt.imsave('CAI.png', cai, cmap="gray")
         subtract_cai = cv2.subtract(cropped, cai)
         plt.imsave('subtracted_cai.png', subtract_cai, cmap="gray")
+        IminusCai = cv2.subtract(cai, cropped)
+        plt.imsave('IminusCai.png', subtract_cai, cmap="gray")
     else:
         print("file does not exist")
