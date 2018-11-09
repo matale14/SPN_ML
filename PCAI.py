@@ -21,8 +21,8 @@ def cai_filter(image):
     h = int(h)
     w = int(w)
     
-    for y in range(0, 500):         # for all pixels in y axis
-        for x in range(0, 500):     # for all pixels in x axis
+    for y in range(0, h):         # for all pixels in y axis
+        for x in range(0, w):     # for all pixels in x axis
             try:
                 n = image[y - 1, x] # North, east, south, west pixels
                 e = image[y, x + 1]
@@ -71,8 +71,68 @@ def cai_filter(image):
 
     print(i, "Values changed out of:", j)
     print("CAI complete")
-    plt.imsave('CAI_diff.png', cai_diff, cmap="gray")
+    plt.imsave('99_CAI_diff.png', cai_diff, cmap="gray")
     return cai_image
+
+def calc_sigma(image):
+    d = image
+    m = 9
+    sigma_0 = 9
+    sigmage = np.zeros_like(d)
+    h = d.shape[0]               # Find out heigh x width for the loop
+    w = d.shape[1]
+
+    print("Calculating sigma image")
+    i = 0
+    j = 0
+
+    h = int(h)
+    w = int(w)
+    
+    for y in range(0, h):         # for all pixels in y axis
+        for x in range(0, w):     # for all pixels in x axis
+
+            sigsum = (1/m)+((d[y, x]^2)-sigma_0)    # According to the formulas in Wu et al.
+            sigmas=(0, sigsum)
+            px = max(sigmas)
+            sigmage[y, x] = px
+
+    return sigmage
+
+def wavelet(dimage, sigmage):
+    d = dimage
+    sigma = sigmage
+    sigma_0 = 9
+
+    wav_image = np.zeros_like(d) # create an empty image with the same dimensions
+    h = d.shape[0]               # Find out heigh x width for the loop
+    w = d.shape[1]
+
+    print("Wavelet transform")
+    i = 0
+    j = 0
+
+    h = int(h)
+    w = int(w)
+    
+    for y in range(0, h):         # for all pixels in y axis
+        for x in range(0, w):     # for all pixels in x axis
+
+            d_px = d[y, x]          
+            sigma_div = sigma_0/(sigma[y, x] + sigma_0) # According to the formulas in Wu et al.
+            px = d_px * sigma_div                       # link here later(Or check wiki)
+            wav_image[y, x] = px
+
+    return wav_image
+
+def get_spn(wav_image):
+
+    average = wav_image[wav_image!=0].mean()    #average all the noise and add them
+    spn = average + wav_image
+    return spn
+
+
+
 
 def crop_center(img, cropx, cropy):
     """
@@ -96,15 +156,25 @@ def crop_center(img, cropx, cropy):
 if __name__ == "__main__":
     img_path = 'example.jpg'
     if os.path.isfile(img_path):
-        original = cv2.imread(img_path, 0)
-        plt.imsave('Original.png', original, cmap="gray")
-        cropped = crop_center(original, 500, 500)
-        plt.imsave('Cropped.png', cropped, cmap="gray")        
+        original = cv2.imread(img_path, 0)                  # the 0 means read as grayscale
+        plt.imsave('0_Original.png', original, cmap="gray") # cmap="gray" means save as grayscale
+
+        cropped = crop_center(original, 0, 0)
+        plt.imsave('1_Cropped.png', cropped, cmap="gray") 
+
         cai = cai_filter(cropped)
-        plt.imsave('CAI.png', cai, cmap="gray")
-        subtract_cai = cv2.subtract(cropped, cai)
-        plt.imsave('subtracted_cai.png', subtract_cai, cmap="gray")
-        IminusCai = cv2.subtract(cai, cropped)
-        plt.imsave('IminusCai.png', subtract_cai, cmap="gray")
+        plt.imsave('2_CAI.png', cai, cmap="gray")
+
+        d_image = cv2.subtract(cai, cropped)
+        plt.imsave('3_D_image.png', d_image, cmap="gray")
+
+        sig_image = calc_sigma(d_image)
+        plt.imsave('4_Sig_image.png', sig_image, cmap="gray")
+
+        Wav_image = wavelet(sig_image, d_image)
+        plt.imsave('5_Wav_image.png', 5_Wav_image, cmap="gray")
+
+        SPN_image = get_spn(SPN_image, d_image)
+        plt.imsave('6_SPN_image.png', SPN_image, cmap="gray")
     else:
         print("file does not exist")
