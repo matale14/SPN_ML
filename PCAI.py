@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import cv2
 from skimage.restoration import estimate_sigma
 import os
-import scipy.misc
+
 
 def cai_filter(image, h, w):
 
@@ -123,6 +123,7 @@ def wavelet(dimage, h, w):
             sigma_div = sigma_0/(calc_sigma(local_area) + sigma_0)  # get the estimated local variance for the pixel
             px = d_px * sigma_div                                   # multiply subtracted CAI with the local variances
             px= int(px)                                             # Estimated camera reference SPN
+            wav_image[y,x]= px
             j += 1
 
     print('\r|{}|{}%'.format(("█" * 25), "100.0"), end="", flush=True)
@@ -158,12 +159,15 @@ def crop_center(img, cropx, cropy):
 if __name__ == "__main__":
     img_path = 'example.jpg'
 
-    w = 512
-    h = 512
 
     if os.path.isfile(img_path):
-        original = cv2.imread(img_path, 0)                 # the 0 means read as grayscale
+        original = cv2.imread(img_path, 0)                  # the 0 means read as grayscale
         plt.imsave('0_Original.png', original, cmap="gray") # cmap="gray" means save as grayscale
+
+        #h = original.shape[0]
+        #w = original.shape[1]
+        h = 512
+        w = 512
 
         cropped = crop_center(original, h, w)
         plt.imsave('1_Cropped.png', cropped, cmap="gray") 
