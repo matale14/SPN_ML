@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import cv2
 from skimage.restoration import estimate_sigma
 import os
-from PIL import Image, ImageEnhance 
+import scipy.misc
 
 def cai_filter(image, h, w):
 
@@ -87,6 +87,7 @@ def calc_sigma(image):
     #http://ws.binghamton.edu/fridrich/Research/double.pdf
     #m = the neighbourhood pixels, here the 3x3 pixels around the selected pixel
     #sum the value of the neighbourhood - the overall variance of the SPN.
+    #Select the max value, so if the value is negative, it returns a black(empty) pixel
 
     sigsum = ((1/m**2)* np.sum((d**2) -(float(sigma_0))))      
 
@@ -122,7 +123,6 @@ def wavelet(dimage, h, w):
             sigma_div = sigma_0/(calc_sigma(local_area) + sigma_0)  # get the estimated local variance for the pixel
             px = d_px * sigma_div                                   # multiply subtracted CAI with the local variances
             px= int(px)                                             # Estimated camera reference SPN
-            wav_image[y, x] = px
             j += 1
 
     print('\r|{}|{}%'.format(("█" * 25), "100.0"), end="", flush=True)
@@ -157,12 +157,12 @@ def crop_center(img, cropx, cropy):
 
 if __name__ == "__main__":
     img_path = 'example.jpg'
-    
+
     w = 512
     h = 512
 
     if os.path.isfile(img_path):
-        original = cv2.imread(img_path, 0)                  # the 0 means read as grayscale
+        original = cv2.imread(img_path, 0)                 # the 0 means read as grayscale
         plt.imsave('0_Original.png', original, cmap="gray") # cmap="gray" means save as grayscale
 
         cropped = crop_center(original, h, w)
@@ -176,14 +176,6 @@ if __name__ == "__main__":
 
         wav_image = wavelet(d_image, h, w)
         plt.imsave('4_Wav_image.png', wav_image, cmap="gray")
-
-        img = Image.fromarray(wav_image)
-        enhancer = ImageEnhance.Brightness(img)
-        enhanced_im = enhancer.enhance(1.8)
-        enhanced_im.save('5_brighten.png')
-        #plt.imsave('5_brighten.png', enhanced_im, cmap="gray")
-
-
 
         spn = get_spn(wav_image)
         print("Sensor Pattern Noise reference number:", spn)
