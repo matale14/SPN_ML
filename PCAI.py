@@ -2,8 +2,8 @@ from skimage.io import imread
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-from skimage.restoration import estimate_sigma
 import os
+from argparse import ArgumentParser
 
 
 def cai_filter(image, h, w):
@@ -96,7 +96,6 @@ def calc_sigma(image):
 
     return local_variance
 
-
 def wavelet(dimage, h, w):
     d = dimage
     sigma_0 = 9
@@ -135,8 +134,7 @@ def get_spn(wav_image):
     average = wav_image[wav_image!=0].mean()    #average all the noise and add them 
     return average
 
-
-def crop_center(img, cropx, cropy):
+def crop_center(img, cropy, cropx):
     """
     :param img: array
         2D input data to be cropped
@@ -157,17 +155,29 @@ def crop_center(img, cropx, cropy):
 
 
 if __name__ == "__main__":
-    img_path = 'example.jpg'
 
 
+    parser = ArgumentParser()
+    parser.add_argument("file_path", help="Select file to filter")
+    parser.add_argument("height", help="Select height of crop(0 to not crop)")
+    parser.add_argument("width", help="Select width of crop(0 to not crop)")
+    args = parser.parse_args()
+
+    img_path = args.file_path
     if os.path.isfile(img_path):
         original = cv2.imread(img_path, 0)                  # the 0 means read as grayscale
         plt.imsave('0_Original.png', original, cmap="gray") # cmap="gray" means save as grayscale
 
         #h = original.shape[0]
         #w = original.shape[1]
-        h = 512
-        w = 512
+        h = int(args.height)
+        w = int(args.width)
+
+        if h == 0 or w == 0:
+            h = original[0]
+            w = original[1]
+
+        average_orig = original.mean()    #average all the noise and add them 
 
         cropped = crop_center(original, h, w)
         plt.imsave('1_Cropped.png', cropped, cmap="gray") 
@@ -183,5 +193,7 @@ if __name__ == "__main__":
 
         spn = get_spn(wav_image)
         print("Sensor Pattern Noise reference number:", spn)
+
+
     else:
         print("file does not exist")
