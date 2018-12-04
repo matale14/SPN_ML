@@ -2,7 +2,7 @@ from skimage.io import imread
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-import os
+import os, time
 from argparse import ArgumentParser
 
 
@@ -19,8 +19,8 @@ def cai_filter(image, h, w):
     i = 0
     j = 0
 
-    for y in range(0, h):         # for all pixels in y axis For some reason, I have to specify the amounts
-        for x in range(0, w):     # for all pixels in x axis The variables above changes for some reason
+    for y in range(0, h):         # for all pixels in y axis
+        for x in range(0, w):     # for all pixels in x axis
 
             progress = round((j / size) * 100, 1)
             progressbar = int(progress / 4)
@@ -62,17 +62,8 @@ def cai_filter(image, h, w):
             j += 1
             cai_image[y, x] = px            # Set the value of the current pixel to px. 
 
-            """
-            Debug prints
-            
-            print("Array:", cai_array)
-            print("mean:", np.mean(cai_array))
-            print("max - min:", np.max(cai_array) - np.min(cai_array))
-            print("e-w - n-s:", np.absolute(e - w) - np.absolute(n - s))
-            print("n-s - e-w:", np.absolute(n - s) - np.absolute(e - w))
-            print("median:", np.median(cai_array))
-            """
-    print()
+
+    print('\r|{}|{}%'.format(("█" * 25), "100.0"))
     print(i, "Values changed out of:", j)
     print("CAI complete")
     plt.imsave('99_CAI_diff.png', cai_diff, cmap="gray")
@@ -156,7 +147,7 @@ def crop_center(img, cropy, cropx):
 
 if __name__ == "__main__":
 
-
+    start_time = time.time()
     parser = ArgumentParser()
     parser.add_argument("file_path", help="Select file to filter")
     parser.add_argument("height", help="Select height of crop(0 to not crop)")
@@ -167,6 +158,7 @@ if __name__ == "__main__":
     if os.path.isfile(img_path):
         original = cv2.imread(img_path, 0)                  # the 0 means read as grayscale
         plt.imsave('0_Original.png', original, cmap="gray") # cmap="gray" means save as grayscale
+        images = []
 
         #h = original.shape[0]
         #w = original.shape[1]
@@ -178,22 +170,57 @@ if __name__ == "__main__":
             w = original[1]
 
         average_orig = original.mean()    #average all the noise and add them 
+        images.append(average_orig)
 
         cropped = crop_center(original, h, w)
         plt.imsave('1_Cropped.png', cropped, cmap="gray") 
+        images.append(cropped)
 
         cai_image = cai_filter(cropped, h, w)
         plt.imsave('2_CAI.png', cai_image, cmap="gray")
+        images.append(cai_image)
 
         d_image = cv2.subtract(cai_image, cropped)
         plt.imsave('3_D_image.png', d_image, cmap="gray")
+        images.append(d_image)
 
         wav_image = wavelet(d_image, h, w)
         plt.imsave('4_Wav_image.png', wav_image, cmap="gray")
+        images.append(wav_image)
 
         spn = get_spn(wav_image)
         print("Sensor Pattern Noise reference number:", spn)
 
+        elapsed_time = time.time() - start_time
+        print("Time taken:", elapsed_time)
 
+        plt.imshow(images[4])
+        plt.imsave('5_Wav_image.png', images[4], cmap="gray")
+
+        """
+        fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(8, 5),
+                           sharex=True, sharey=True)
+
+        ax[0, 1].imshow(images[0])
+        ax[0, 0].axis('off')
+        ax[0, 0].set_title('Original')
+
+        ax[0, 1].imshow(images[1])
+        ax[0, 1].axis('off')
+        ax[0, 1].set_title('crop')
+
+        ax[0, 2].imshow(images[2])
+        ax[0, 2].axis('off')
+        ax[0, 2].set_title('cai')
+
+        ax[1, 1].imshow(images[3])
+        ax[1, 1].axis('off')
+        ax[1, 1].set_title('d')
+
+        ax[1, 2].imshow(images[4])
+        ax[1, 2].axis('off')
+        ax[1, 2].set_title('wav')
+
+        """
     else:
         print("file does not exist")
