@@ -1,9 +1,11 @@
+from __future__ import print_function
 from skimage.io import imread
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import os, time
 from PIL import Image
+
 
 
 cpdef unsigned char[:, :] cai_filter(unsigned char [:, :] image):
@@ -14,13 +16,10 @@ cpdef unsigned char[:, :] cai_filter(unsigned char [:, :] image):
     cdef char[4] cai_array
     h = cai_image.shape[0]
     w = cai_image.shape[1]
-    print(h, "x", w)
-    print(h*w, "pixels")
     size = h*w
     cdef unsigned char[:, :] cai_diff
     cai_diff = np.zeros_like(image)  # Another clone just for the affected pixels
 
-    print("Starting loop")
     i = 0
     j = 0
 
@@ -58,8 +57,6 @@ cpdef unsigned char[:, :] cai_filter(unsigned char [:, :] image):
             cai_image[y, x] = px            # Set the value of the current pixel to px. 
 
 
-    print(i, "Values changed out of:", j)
-    print("CAI complete")
     return cai_image
 
 cpdef int calc_sigma(unsigned char[:, :] image):
@@ -92,7 +89,6 @@ cpdef unsigned char[:, :] wavelet(unsigned char [:, :] image):
     w = d.shape[1]
     size = h*w
 
-    print("Wavelet transform")
     j = 0
 
     
@@ -108,8 +104,6 @@ cpdef unsigned char[:, :] wavelet(unsigned char [:, :] image):
             wav_image[y,x]= px
             j += 1
 
-    #print('\r|{}|{}%'.format(("█" * 25), "100.0"), end="", flush=True)
-    print()
     return wav_image
 
 def get_spn(wav_image):
@@ -163,33 +157,41 @@ def filter(img, h, w):
 
 
         spn = get_spn(wav_image)
-        print("Sensor Pattern Noise reference number:", spn)
 
         return(wav_image)
 
         
     else:
-        #print("file does not exist")
+        print("file does not exist")
         return None
 
 def filter_main(folder, h, w):
 
     start_time = time.time()
     images = []
+    j = 0
+    onlyfiles = next(os.walk(folder))[2] #dir is your directory path as string
+    size = len(onlyfiles)
     for filename in os.listdir(folder):
         paths = folder+filename
         i = filter(paths, h, w)
         images.append(i)
         kake = "filtered\\"
+        path_create = folder + kake
         path_new = folder + kake + filename
+        if not os.path.exists(path_create):
+            os.makedirs(path_create)
         plt.imsave(path_new, i, cmap="gray" )
         during_time = time.time() - start_time
-        print(during_time)
-        print()
-
+        progress = round((j / size) * 100, 1)
+        progressbar = int(progress / 4)
+        print('\r|{}|{0:.2f}% Time elapsed: {}'.format(("█" * progressbar), progress, during_time), end="", flush=True)
+        j += 1
 
     elapsed_time = time.time() - start_time
+    print('\r|{}|{}%'.format(("█" * 25), 100), end="", flush=True)
     print("Time taken:", elapsed_time)
+
 
 
     return images  
