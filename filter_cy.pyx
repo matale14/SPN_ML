@@ -107,9 +107,12 @@ cpdef unsigned char[:, :] wavelet(unsigned char [:, :] image):
     return wav_image
 
 def get_spn(wav_image):
-
-    average = wav_image[wav_image!=0].mean()    #average all the noise and add them 
-    return average
+    
+    try:
+        average = wav_image[wav_image!=0].mean()    #average all the noise and add them 
+        return average
+    except Exception as e:
+        print(e)
 
 def crop_center(img, cropy, cropx):
     """
@@ -185,7 +188,9 @@ def filter_main(folder, h, w):
         during_time = time.time() - start_time
         progress = round((j / size) * 100, 1)
         progressbar = int(progress / 4)
-        print('\r|{}|{0:.2f}% Time elapsed: {}'.format(("█" * progressbar), progress, during_time), end="", flush=True)
+        frogress = "{0:.2f}".format(progress)
+        elapse = "{0:.2f}".format(during_time)
+        print('\r|{}|{}% Time elapsed: {}'.format(("█" * progressbar), frogress, elapse), end="", flush=True)
         j += 1
 
     elapsed_time = time.time() - start_time
