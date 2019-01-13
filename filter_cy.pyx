@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import cv2
 import os, time
 from PIL import Image
-
+from argparse import ArgumentParser
 
 
 cpdef unsigned char[:, :] cai_filter(unsigned char [:, :] image):
@@ -79,8 +79,8 @@ cpdef int calc_sigma(unsigned char[:, :] image):
     return local_variance
 
 cpdef unsigned char[:, :] wavelet(unsigned char [:, :] image):
-    cdef unsigned char[:, :] d, wav_image, dimage
-    d = dimage
+    cdef unsigned char[:, :] d, wav_image
+    d = image
     cdef int sigma_0, h, w, size, j, d_px, px, sigma_div
     sigma_0 = 9
 
@@ -159,8 +159,6 @@ def filter(img, h, w):
         wav_image = wavelet(d_image)
 
 
-        spn = get_spn(wav_image)
-
         return(wav_image)
 
         
@@ -175,9 +173,12 @@ def filter_main(folder, h, w):
     j = 0
     onlyfiles = next(os.walk(folder))[2] #dir is your directory path as string
     size = len(onlyfiles)
+    est_camera_ref = []
     for filename in os.listdir(folder):
         paths = folder+filename
         i = filter(paths, h, w)
+        spn = get_spn(i)
+        est_camera_ref.append(spn)
         images.append(i)
         kake = "filtered\\"
         path_create = folder + kake
@@ -196,10 +197,13 @@ def filter_main(folder, h, w):
     elapsed_time = time.time() - start_time
     print('\r|{}|{}%'.format(("█" * 25), 100), end="", flush=True)
     print("Time taken:", elapsed_time)
+    print("Estimated camera reference:", est_camera_ref.mean())
 
 
+parser = ArgumentParser()
+parser.add_argument("path", help="python filter_cy PATHHERE height width")
+parser.add_argument("height", help="python filter_cy PATHHERE height width")
+parser.add_argument("width", help="python filter_cy PATHHERE height width")
 
-    return images  
-
-
-filter_main("F:\\Dropbox\\Dropbox\\SPN\\Wenche\\", 28, 28)
+args = parser.parse_args()
+filter_main(args.path, args.height, args.width)
