@@ -1,9 +1,11 @@
+from __future__ import print_function
 from skimage.io import imread
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import os, time
 from PIL import Image
+from argparse import ArgumentParser
 
 
 def cai_filter(image):
@@ -77,8 +79,8 @@ def calc_sigma(image):
 
     return local_variance
 
-def wavelet(dimage):
-    d = dimage
+def wavelet(image):
+    d = image
     sigma_0 = 9
 
     wav_image = np.zeros_like(d) # create an empty image with the same dimensions
@@ -128,8 +130,9 @@ def crop_center(img, cropy, cropx):
         return img
     else:
         y, x = img.shape
-        startx = x // 2 - cropx // 2
-        starty = y // 2 - cropy // 2
+
+        startx = (x // 2) - (cropx // 2)
+        starty = (y // 2) - (cropy // 2)
         return img[starty:starty + cropy, startx:startx + cropx]
 
 
@@ -156,9 +159,6 @@ def filter(img, h, w):
 
         wav_image = wavelet(d_image)
 
-
-        spn = get_spn(wav_image)
-
         return(wav_image)
 
         
@@ -172,15 +172,19 @@ def filter_main(folder, h, w):
     images = []
     j = 0
     onlyfiles = next(os.walk(folder))[2] #dir is your directory path as string
+    allfiles=os.listdir(folder)
     size = len(onlyfiles)
-
-    for filename in os.listdir(folder):
-        paths = folder+filename
-        i = filter(paths, h, w)
+    est_camera_ref = []
+    imlist=[filename for filename in allfiles if  filename[-4:] in [".jpg",".JPG"]]
+    for f in imlist:
+        paths = folder+f
+        i = filter(paths, int(h), int(w))
+        spn = get_spn(i)
+        est_camera_ref.append(spn)
         images.append(i)
         kake = "filtered\\"
         path_create = folder + kake
-        path_new = folder + kake + filename
+        path_new = folder + kake + f
         if not os.path.exists(path_create):
             os.makedirs(path_create)
         plt.imsave(path_new, i, cmap="gray" )
@@ -195,9 +199,13 @@ def filter_main(folder, h, w):
     elapsed_time = time.time() - start_time
     print('\r|{}|{}%'.format(("█" * 25), 100), end="", flush=True)
     print("Time taken:", elapsed_time)
+    print("Estimated camera reference:", est_camera_ref.mean())
 
 
-    return images  
+parser = ArgumentParser()
+parser.add_argument("path", help="python filter_cy PATHHERE height width")
+parser.add_argument("height", help="python filter_cy PATHHERE height width")
+parser.add_argument("width", help="python filter_cy PATHHERE height width")
 
-
-filter_main("F:\\Dropbox\\Dropbox\\SPN\\Wenche\\", 56, 56)
+args = parser.parse_args()
+filter_main(args.path, args.height, args.width)
