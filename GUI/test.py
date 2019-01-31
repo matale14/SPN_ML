@@ -35,7 +35,7 @@ class TestApp(App):
         for folders in glob(join(curdir, "*")):
             try:
                 name = str(folders)
-                btn = Button(text=name, size=(100, 100), size_hint=(None, None))
+                btn = Button(text=name, size=(100, 100), size_hint=[1,0.2])
                 layout.add_widget(btn)
                 presentation = GridLayout(cols=20,padding=0, spacing=10)
 
