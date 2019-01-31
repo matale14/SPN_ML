@@ -1,7 +1,7 @@
 from glob import glob
 from os.path import join, basename
 from os import mkdir
-from PIL import Image
+from PIL import Image as pimage
 from sys import platform
 from kivy.app import App
 from kivy.uix.image import Image
@@ -44,8 +44,9 @@ class SPAI(App):
         return layout
 
     def _showphotos(self):
+        self._create_thumbs()
         layout = BoxLayout(orientation="vertical", padding=20, spacing=30, size_hint_y=None)
-        layout.bind(minimum_height=layout.setter('height'))
+        layout.bind(minimum_height=layout.setter("height"))
         #Specifies the path of the main folder, the first * in the "glob(join(curdir, '*', '*'))" is the subfolder
         # containing the images. An * is used to import from all subfolders, if there are several. The last * is the
         # image name, again * is used as a wild card.
@@ -56,14 +57,13 @@ class SPAI(App):
 
         for folders in glob(join(curdir, "*")):
             try:
-                name = str(folders)
-                btn = Button(text=name, size=(100, 100))
+                name = basename(folders)
+                btn = Button(text=name)
                 layout.add_widget(btn)
                 presentation = GridLayout(cols=20, padding=0, spacing=10, size_hint_y=None)
 
-                for filename in glob(join(curdir, folders, "*")):
+                for filename in glob(join(curdir, folders, "thumb", "*")):
                     try:
-                        # load the image
                         im = Image(source=filename)
                         presentation.add_widget(im)
 
@@ -77,55 +77,51 @@ class SPAI(App):
 
         return layout
 
+
     def _create_thumbs(self):
         curdir = "/Users/Bjarke/Desktop/Test/"
-        try:
-            mkdir(curdir + "thump")
-        except FileExistsError:
-            pass
-        size = 128, 128
         if platform == "darwin" or platform == "linux":
             for folder in glob(join(curdir, "*")):
-                folder_name = basename(folder)
-                if folder_name == "thump":
+                try:
+                    mkdir(folder + "/thumb/")
+                except FileExistsError:
+                    print("Thumb folder already exists")
                     pass
-                else:
-                    thumbfolder_path = curdir + "thump/" + folder_name
-                    try:
-                        mkdir(thumbfolder_path)
 
-                    except FileExistsError:
+                for picture in glob(join(curdir, folder, "*")):
+                    picture_name = basename(picture)
+                    if picture_name == "thumb":
                         pass
-
-                    try:
-                        for picture in glob(join(curdir, folder, "*")):
-                            picture_name = basename(picture)
-                            im = Image.open(picture)
+                    else:
+                        try:
+                            size = 128, 128
+                            im = pimage.open(picture)
                             im.thumbnail(size)
-                            im.save(thumbfolder_path + "/" + picture_name, "JPEG")
-                    except:
-                        pass
+                            im.save(folder + "/thumb/" + picture_name, "JPEG")
+                        except FileExistsError:
+                            print("Pictures already exists")
+                            pass
         else:
             for folder in glob(join(curdir, "*")):
-                folder_name = basename(folder)
-                if folder_name == "thump":
+                try:
+                    mkdir(folder + r"'\thumb\'")
+                except FileExistsError:
+                    print("Thumb folder already exists")
                     pass
-                else:
-                    thumbfolder_path = str(curdir + r"'thump\'" + folder_name)
-                    try:
-                        mkdir(thumbfolder_path)
 
-                    except FileExistsError:
+                for picture in glob(join(curdir, folder, "*")):
+                    picture_name = basename(picture)
+                    if picture_name == "thumb":
                         pass
-
-                    try:
-                        for picture in glob(join(curdir, folder, "*")):
-                            picture_name = basename(picture)
-                            im = Image.open(picture)
+                    else:
+                        try:
+                            size = 128, 128
+                            im = pimage.open(picture)
                             im.thumbnail(size)
-                            im.save(thumbfolder_path + r"'\'" + picture_name, "JPEG")
-                    except:
-                        pass
+                            im.save(folder + r"'\thumb\'" + picture_name, "JPEG")
+                        except FileExistsError:
+                            print("Pictures already exists")
+                            pass
 
 
 if __name__ == "__main__":
