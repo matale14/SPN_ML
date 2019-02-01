@@ -31,20 +31,19 @@ class SPAI(App):
         root.add_widget(scroll)
         scroll.add_widget(self._showphotos())
 
-
         return root
 
 
     def _sidepanel(self):
-        layout = BoxLayout(orientation="vertical", size_hint=(None, 1), pos_hint={"x": 0.0, "y": 0.0})
-        layout.add_widget(Button(text="Import Photos", size_hint=(1,0.2)))
-        layout.add_widget(Button(text="Create Report", size_hint=(1,0.2)))
-        layout.add_widget(Button(text="Save?", size_hint=(1,0.2)))
-        layout.add_widget(Button(text="Button 4", size_hint=(1,0.2)))
+        layout = BoxLayout(orientation="vertical", pos_hint={"x": 0.0, "y": 0.0})
+        layout.add_widget(Button(text="Import Photos", size_hint=(0.2,1)))
+        layout.add_widget(Button(text="Create Report", size_hint=(0.2,1)))
+        layout.add_widget(Button(text="Save?", size_hint=(0.2,1)))
+        layout.add_widget(Button(text="Button 4", size_hint=(0.2,1)))
         return layout
 
     def _showphotos(self):
-        self._create_thumbs()
+        #self._create_thumbs()
         layout = BoxLayout(orientation="vertical", padding=20, spacing=30, size_hint_y=None)
         layout.bind(minimum_height=layout.setter("height"))
         #Specifies the path of the main folder, the first * in the "glob(join(curdir, '*', '*'))" is the subfolder
@@ -52,8 +51,6 @@ class SPAI(App):
         # image name, again * is used as a wild card.
 
         curdir = "/Users/Bjarke/Desktop/Test/"
-
-        """Note for my self. Try implement the button and presentation in a FloatLayout, then it can be more smooth."""
 
         for folders in glob(join(curdir, "*")):
             try:
