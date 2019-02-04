@@ -79,8 +79,7 @@ class SPAI(App):
                 try:
                     im = Image(source=filename)
                     layout.add_widget(im)
-                    print(filename)
-
+                    
                 except Exception:
                     print("Pictures: Unable to load <%s>" % filename)
 
