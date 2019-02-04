@@ -1,0 +1,2 @@
+model_checkpoint_path: "spai_model1"
+all_model_checkpoint_paths: "spai_model1"
