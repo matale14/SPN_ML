@@ -12,8 +12,8 @@ cpdef unsigned char[:, :] cai_filter(unsigned char [:, :] image):
     
     cdef unsigned char[:, :] cai_image
     cai_image = np.zeros_like(image) # create an empty image with the same dimensions
-    cdef int n, e, s, we, x, y, i, j, h, w, size, px
-    cdef char[4] cai_array
+    cdef int no, ea, so, we, x, y, i, j, h, w, size, px, ne, nw, se, sw
+    cdef char[8] cai_array
     h = cai_image.shape[0]
     w = cai_image.shape[1]
     size = h*w
@@ -71,7 +71,7 @@ cpdef int calc_sigma(unsigned char[:, :] image):
     #sum the value of the neighbourhood - the overall variance of the SPN.
     #Select the max value, so if the value is negative, it returns a black(empty) pixel
 
-    sigsum = ((1/m**2)* np.sum((d**2) -(float(sigma_0))))      
+    sigsum = ((1/(m**2))* np.sum((d**2) -(float(sigma_0))))      
 
     sigmas=(0, sigsum)
     local_variance = max(sigmas)
@@ -138,7 +138,6 @@ def filter(img, h, w):
 
     if os.path.isfile(img):
         original = cv2.imread(img, 0)                  # the 0 means read as grayscale
-        plt.imsave('0_Original.png', original, cmap="gray") # cmap="gray" means save as grayscale
 
         if h == 0 or w == 0:
             h = original[0]
@@ -153,7 +152,7 @@ def filter(img, h, w):
         cai_image = cai_filter(cropped)
 
 
-        d_image = cv2.subtract(cai_image, cropped)
+        d_image = cv2.subtract(cropped, cai_image)
 
 
         wav_image = wavelet(d_image)
@@ -197,7 +196,7 @@ def filter_main(folder, h, w):
     elapsed_time = time.time() - start_time
     print('\r|{}|{}%'.format(("█" * 25), 100), end="", flush=True)
     print("Time taken:", elapsed_time)
-    print("Estimated camera reference:", est_camera_ref.mean())
+    print("Estimated camera reference:", (sum(est_camera_ref)/len(est_camera_ref)))
 
 
 parser = ArgumentParser()

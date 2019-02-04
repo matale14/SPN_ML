@@ -16,6 +16,6 @@ def rename(path, name):
 if __name__ == "__main__":
     path = os.path.dirname(os.path.abspath(__file__))
 
-    name = "W"  #CHANGE THIS
+    name = "M"  #CHANGE THIS
 
     rename(path, name)

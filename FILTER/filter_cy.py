@@ -6,6 +6,8 @@ import cv2
 import os, time
 from PIL import Image
 from argparse import ArgumentParser
+import scipy, scipy.ndimage
+import multiprocessing as mp
 
 
 def cai_filter(image):
@@ -14,70 +16,86 @@ def cai_filter(image):
     h = cai_image.shape[0]
     w = cai_image.shape[1]
     size = h*w
-    cai_diff = np.zeros_like(image)  # Another clone just for the affected pixels
-
 
     i = 0
-    j = 0
 
-    for y in range(0, h):         # for all pixels in y axis
-        for x in range(0, w):     # for all pixels in x axis
+    for y in range(0, h-1):         # for all pixels in y axis
+        for x in range(0, w-1):     # for all pixels in x axis
             
-            try:
-                n = image[y - 1, x] # North, east, south, west pixels
-                e = image[y, x + 1]
-                s = image[y + 1, x]
-                we = image[y, x - 1]
-            except IndexError:
-                n = image[y, x]
-                e = image[y, x]
-                s = image[y, x]
-                we = image[y, x]
+            no = int(image[y - 1, x])
+            ne = int(image[y - 1, x + 1])
+            nw = int(image[y - 1, x - 1])
+            so = int(image[y + 1, x])
+            se = int(image[y + 1, x + 1])
+            sw = int(image[y + 1, x - 1])
+            ea = int(image[y, x + 1])
+            we = int(image[y, x - 1])
 
-            cai_array = [n, e, s, we]
-
-            n = int(n)
-            e = int(e)
-            s = int(s)
-            we = int(we)
+            cai_array = [nw, no, ne, we, ea, sw, so, se]
 
             if (np.max(cai_array) - np.min(cai_array)) <= 20:       # If the max number of the neighbouring pixels are less than or equal to
                 px = np.mean(cai_array)                             # 20 in value(0-255) then just set the pixel to the mean
-            elif (np.absolute(e - we) - np.absolute(n - s)) > 20:    # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
-                px = (n + s) / 2                                    # the value is northern + southern pixel divided by 2
-            elif (np.absolute(n - s) - np.absolute(e - we)) > 20:
-                px = (e + we) / 2
+            elif (np.absolute(ea - we) - np.absolute(no - so)) > 20:   # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
+                px = (no + so) / 2                                    # the value is northern + southern pixel divided by 2
+            elif (np.absolute(no - so) - np.absolute(ea - we)) > 20:
+                px = (ea + we) / 2
+            elif (np.absolute(ne - sw) - np.absolute(se - nw)) > 20:   # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
+                px = (se + nw) / 2                                    # the value is northern + southern pixel divided by 2
+            elif (np.absolute(se - nw) - np.absolute(ne - sw)) > 20:
+                px = (ne + we) / 2
             else:
                 px = np.median(cai_array)                           # Median is backup. Median just selects the item that is most in the middle.
 
             px = int(px)
 
-
-            if image[y, x] != int(px):      # If a pixel changes value, count it and apply in the cai_diff image
-                cai_diff[y, x] = int(px)
-                i += 1
-            j += 1
             cai_image[y, x] = px            # Set the value of the current pixel to px. 
 
     return cai_image
 
+"""
 def calc_sigma(image):
     d = image
     m = 3
     sigma_0 = 9
-
     #Wu et al.
     #http://ws.binghamton.edu/fridrich/Research/double.pdf
     #m = the neighbourhood pixels, here the 3x3 pixels around the selected pixel
     #sum the value of the neighbourhood - the overall variance of the SPN.
     #Select the max value, so if the value is negative, it returns a black(empty) pixel
 
-    sigsum = ((1/m**2)* np.sum((d**2) -(float(sigma_0))))      
+    sigsum = np.sum((sum(d)**2) -(float(sigma_0)))
+    sigmas=(0, ((1/(m**2))*sigsum))
 
-    sigmas=(0, sigsum)
     local_variance = max(sigmas)
 
     return local_variance
+"""
+
+def calc_sigma(image):
+    d = image
+    m = 3
+    sigma_0 = 9
+    h = d.shape[0]
+    w = d.shape[1]
+    #Wu et al.
+    #http://ws.binghamton.edu/fridrich/Research/double.pdf
+    #m = the neighbourhood pixels, here the 3x3 pixels around the selected pixel
+    #sum the value of the neighbourhood - the overall variance of the SPN.
+    #Select the max value, so if the value is negative, it returns a black(empty) pixel
+    neigh = []
+    for y in range(0, h):         # for all pixels in y axis
+        for x in range(0, w):     # for all pixels in x axis
+            the_sub = ((d[y,x])**2) -(float(sigma_0))
+            neigh.append(the_sub)
+
+
+    sigsum = np.sum(neigh)
+
+    sigmas=[0, ((1/(m**2))*sigsum)]
+
+    local_variance = max(sigmas)
+    return local_variance
+
 
 def wavelet(image):
     d = image
@@ -86,24 +104,31 @@ def wavelet(image):
     wav_image = np.zeros_like(d) # create an empty image with the same dimensions
     h = d.shape[0]
     w = d.shape[1]
-    size = h*w
 
-    j = 0
 
     
-    for y in range(0, h-3):         # for all pixels in y axis
-        for x in range(0, w-3):     # for all pixels in x axis
+    for y in range(0, h-1):         # for all pixels in y axis
+        for x in range(0, w-1):     # for all pixels in x axis
 
-
-
+            d_px = d[y, x]          # Select current pixel
+                                    # Select the 9 pixels around current pixel from the CAI subtraction            
+            no = int(image[y - 1, x])
+            ne = int(image[y - 1, x + 1])
+            nw = int(image[y - 1, x - 1])
+            so = int(image[y + 1, x])
+            se = int(image[y + 1, x + 1])
+            sw = int(image[y + 1, x - 1])
+            ea = int(image[y, x + 1])
+            we = int(image[y, x - 1])
+            neighbour = np.array([[nw, no, ne],
+                                  [we, d_px, ea],
+                                  [sw, so, se]], dtype=np.float)
                                                                     # According to the formulas in Wu et al.
-            d_px = d[y, x]                                          # Select current pixel
-            local_area = d[range(y-3, y+3), range(x-3,x+3)]         # Select the 9 pixels around it from the CAI subtraction
-            sigma_div = sigma_0/(calc_sigma(local_area) + sigma_0)  # get the estimated local variance for the pixel
+            sigma_div = sigma_0/(calc_sigma(neighbour) + sigma_0)   # get the estimated local variance for the pixel
             px = d_px * sigma_div                                   # multiply subtracted CAI with the local variances
-            px= int(px)                                             # Estimated camera reference SPN
-            wav_image[y,x]= px
-            j += 1
+            px = int(px)                                            # Estimated camera reference SPN
+            wav_image[y,x] = px
+
 
     return wav_image
 
@@ -142,8 +167,8 @@ def filter(img, h, w):
         original = cv2.imread(img, 0)                  # the 0 means read as grayscale
 
         if h == 0 or w == 0:
-            h = original[0]
-            w = original[1]
+            h = original.shape[0]
+            w = original.shape[1]
 
         average_orig = original.mean()    #average all the noise and add them 
 
@@ -154,7 +179,7 @@ def filter(img, h, w):
         cai_image = cai_filter(cropped)
 
 
-        d_image = cv2.subtract(cai_image, cropped)
+        d_image = cv2.subtract(cropped, cai_image)
 
 
         wav_image = wavelet(d_image)
@@ -175,7 +200,7 @@ def filter_main(folder, h, w):
     allfiles=os.listdir(folder)
     size = len(onlyfiles)
     est_camera_ref = []
-    imlist=[filename for filename in allfiles if  filename[-4:] in [".jpg",".JPG"]]
+    imlist=[filename for filename in allfiles if filename[-4:] in [".jpg",".JPG"]]
     for f in imlist:
         paths = folder+f
         i = filter(paths, int(h), int(w))
@@ -193,15 +218,21 @@ def filter_main(folder, h, w):
         progressbar = int(progress / 4)
         frogress = "{0:.2f}".format(progress)
         elapse = "{0:.2f}".format(during_time)
-        print('\r|{}|{}% Time elapsed: {}'.format(("█" * progressbar), frogress, elapse), end="", flush=True)
+        
+        if j != 0:
+            est_time = "{0:.2f}".format((during_time/j)*(size-j))
+        else:
+            est_time = "{0:.2f}".format(progress*size)
+        
+        print('\r|{}|{}% Time elapsed: {}, estimate: {}'.format(("█" * progressbar), frogress, elapse, est_time), end="", flush=True)
         j += 1
 
     elapsed_time = time.time() - start_time
     print('\r|{}|{}%'.format(("█" * 25), 100), end="", flush=True)
     print("Time taken:", elapsed_time)
-    print("Estimated camera reference:", est_camera_ref.mean())
+    print("Estimated camera reference:", (sum(est_camera_ref)/len(est_camera_ref)))
 
-
+"""
 parser = ArgumentParser()
 parser.add_argument("path", help="python filter_cy PATHHERE height width")
 parser.add_argument("height", help="python filter_cy PATHHERE height width")
@@ -209,3 +240,21 @@ parser.add_argument("width", help="python filter_cy PATHHERE height width")
 
 args = parser.parse_args()
 filter_main(args.path, args.height, args.width)
+"""
+
+"""
+path1 = 'F:\\Dropbox\\Dropbox\\SPN\\AlexC\\'
+path2 = 'F:\\Dropbox\\Dropbox\\SPN\\Bjarke\\'
+path3 = 'F:\\Dropbox\\Dropbox\\SPN\\Gabbi\\'
+path4 = 'F:\\Dropbox\\Dropbox\\SPN\\Wenche\\'
+path5 = 'F:\\Dropbox\\Dropbox\\SPN\\Monica\\'
+
+
+lista = [path1, path2, path3, path4, path5]
+for p in lista:
+    filter_main(p, 512, 512)
+"""
+
+#filter_main('F:\\Dropbox\\Dropbox\\SPN\\lena\\', 512, 512)
+
+filter_main('F:\\Dropbox\\Dropbox\\SPN\\Monica\\', 512, 512)
