@@ -24,9 +24,11 @@ class SPAI(App):
     def build(self):
         global scroll
         global layout
+        global curdir
+        curdir = "/Users/Bjarke/Desktop/Test/"
         #Creating the layout
         root = FloatLayout()
-        scroll = ScrollView(pos_hint={"x": 0.1, "y": 0.0}, size_hint=(0.9,1))
+        scroll = ScrollView(pos_hint={"x": 0.12, "top": 1.0}, size_hint=(0.9,1))
         layout = GridLayout(cols=5, padding=0, spacing=5)
         layout.bind(minimum_height=layout.setter("height"))
 
@@ -34,6 +36,7 @@ class SPAI(App):
         root.add_widget(self._sidepanel())
         root.add_widget(scroll)
         scroll.add_widget(layout)
+        #self._create_thumbs()
         return root
 
     def _update_scroll(self, path):
@@ -47,8 +50,8 @@ class SPAI(App):
 
 
     def _sidepanel(self):
-        curdir = "/Users/Bjarke/Desktop/Test/"
-        layout = BoxLayout(orientation="vertical", pos_hint={"x": 0.0, "y": 0.0}, size_hint=(0.1,1))
+        global curdir
+        layout = BoxLayout(orientation="vertical", pos_hint={"x": 0.0, "top": 1.0}, size_hint=(0.1,1))
 
         for folders in glob(join(curdir, "*")):
             name = basename(folders)
@@ -60,11 +63,9 @@ class SPAI(App):
 
     def _showphotos(self, btn):
         global layout
-        layout = GridLayout(cols=5, padding=0, spacing=5)
+        global curdir
+        layout = GridLayout(cols=5, padding=0, spacing=5, size_hint=(None, None), width=600)
         layout.bind(minimum_height=layout.setter("height"))
-
-
-        curdir = "/Users/Bjarke/Desktop/Test/"
 
         foldername = btn
 
@@ -77,33 +78,13 @@ class SPAI(App):
 
             for filename in glob(join(curdir, foldername, "thumb", "*")):
                 try:
+                    canvas = BoxLayout(size_hint_y=None)
                     im = Image(source=filename)
-                    layout.add_widget(im)
-                    
+                    canvas.add_widget(im)
+                    layout.add_widget(canvas)
+
                 except Exception:
                     print("Pictures: Unable to load <%s>" % filename)
-
-
-        """for folders in glob(join(curdir, "*")):
-            try:
-                name = basename(folders)
-                btn = Button(text=name)
-
-                layout.add_widget(btn)
-                presentation = GridLayout(cols=20, padding=0, spacing=10, size_hint_y=None)
-
-                for filename in glob(join(curdir, folders, "thumb", "*")):
-                    try:
-                        im = Image(source=filename)
-                        presentation.add_widget(im)
-
-                    except Exception:
-                        print("Pictures: Unable to load <%s>" % filename)
-
-                layout.add_widget(presentation)
-
-            except:
-                pass"""
 
         return layout
 
