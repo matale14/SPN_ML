@@ -10,6 +10,10 @@ from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.popup import Popup
+from kivy.uix.widget import Widget
+from kivy.factory import Factory as F
 
 
 
@@ -25,18 +29,34 @@ class SPAI(App):
         global scroll
         global layout
         global curdir
-        curdir = "/Users/Bjarke/Desktop/Test/"
+        global root
+
+        curdir = " "
         #Creating the layout
         root = FloatLayout()
-        scroll = ScrollView(pos_hint={"x": 0.12, "top": 1.0}, size_hint=(0.9,1))
+        scroll = ScrollView(pos_hint={"x": 0.12, "top": 0.92}, size_hint=(0.9,1))
         layout = GridLayout(cols=5, padding=0, spacing=5)
         layout.bind(minimum_height=layout.setter("height"))
+
+        actionbar = F.ActionBar(pos_hint={'top': 1})
+        av = F.ActionView()
+        av.add_widget(F.ActionPrevious(title='SPAI', with_previous=False))
+        av.add_widget(F.ActionOverflow())
+        av.add_widget(F.ActionButton(text='Import'.format(), on_press=self._pop))
+        av.add_widget(F.ActionButton(text='Report'.format()))
+        av.add_widget(F.ActionButton(text='Save'.format()))
+        av.add_widget(F.ActionButton(text='Whatever'.format()))
+
+        actionbar.add_widget(av)
+        av.use_separator = False
+        root.add_widget(actionbar)
 
         #Adding the layouts together
         root.add_widget(self._sidepanel())
         root.add_widget(scroll)
         scroll.add_widget(layout)
         #self._create_thumbs()
+
         return root
 
     def _update_scroll(self, path):
@@ -48,23 +68,74 @@ class SPAI(App):
         layout.do_layout()
 
 
-
     def _sidepanel(self):
         global curdir
-        layout = BoxLayout(orientation="vertical", pos_hint={"x": 0.0, "top": 1.0}, size_hint=(0.1,1))
+        global sidepanel_layout
+        global root
+        sidepanel_layout = BoxLayout(orientation="vertical", pos_hint={"x": 0.0, "top": 0.92}, size_hint=(0.1, 0.92))
+        if curdir == " ":
+            return sidepanel_layout
+        else:
+            root.remove_widget(sidepanel_layout)
+            for folders in glob(join(curdir, "*")):
 
-        for folders in glob(join(curdir, "*")):
-            name = basename(folders)
-            btn = Button(text=name, on_press=lambda n=name:self._update_scroll(n.text))
-            layout.add_widget(btn)
+                name = basename(folders)
+                btn = Button(text=name, on_press=lambda n=name:self._update_scroll(n.text))
+                sidepanel_layout.add_widget(btn)
+            root.add_widget(sidepanel_layout)
+            sidepanel_layout.do_layout()
 
-        return layout
+
+    def _validate(self, fileChooser):
+        global curdir
+        curdir = fileChooser.path
+        self._sidepanel()
+
+
+    def _pop(self, obj):
+
+        fileChooser = FileChooserIconView(size_hint_y=None)
+        content = BoxLayout(orientation='vertical', spacing=7)
+
+        # first, create the scrollView
+        scrollView = ScrollView()
+
+        # then, create the fileChooser and integrate it in the scrollView
+
+        fileChooser.bind(on_submit=self._validate)
+        fileChooser.height = 500  # this is a bit ugly...
+
+        scrollView.add_widget(fileChooser)
+
+        # construct the content, widget are used as a spacer
+        content.add_widget(Widget(size_hint_y=None, height=5))
+        content.add_widget(scrollView)
+        content.add_widget(Widget(size_hint_y=None, height=5))
+
+        popup = Popup(title='Choose Directory',
+                      content=content,
+                      size_hint=(0.6, 0.6))
+
+        # 2 buttons are created for accept or cancel the current value
+        btnlayout = BoxLayout(size_hint_y=None, height=50, spacing=5)
+        btn = Button(text='Ok')
+        btn.bind(on_release= lambda x: self._validate(fileChooser))
+        btn.bind(on_release=popup.dismiss)
+        btnlayout.add_widget(btn)
+
+        btn = Button(text='Cancel')
+        btn.bind(on_release=popup.dismiss)
+        btnlayout.add_widget(btn)
+        content.add_widget(btnlayout)
+
+        # all done, open the popup !
+        popup.open()
 
 
     def _showphotos(self, btn):
         global layout
         global curdir
-        layout = GridLayout(cols=5, padding=0, spacing=5, size_hint=(None, None), width=600)
+        layout = GridLayout(cols=5, padding=0, spacing=0, size_hint=(1, None))
         layout.bind(minimum_height=layout.setter("height"))
 
         foldername = btn
@@ -78,7 +149,7 @@ class SPAI(App):
 
             for filename in glob(join(curdir, foldername, "thumb", "*")):
                 try:
-                    canvas = BoxLayout(size_hint_y=None)
+                    canvas = BoxLayout(size_hint=(1,None))
                     im = Image(source=filename)
                     canvas.add_widget(im)
                     layout.add_widget(canvas)
