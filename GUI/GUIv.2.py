@@ -15,14 +15,13 @@ from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.factory import Factory as F
 
-
-
 """
 Created by: Bjarke Larsen
 
 Note: I had to import glob, os, PIL and sys before all kivy modules, otherwise the photos didn't load. Haven't 
 tested if it affects the creation of the thumbnails.
 """
+
 
 class SPAI(App):
     def build(self):
@@ -32,9 +31,9 @@ class SPAI(App):
         global root
 
         curdir = " "
-        #Creating the layout
+        # Creating the layout
         root = FloatLayout()
-        scroll = ScrollView(pos_hint={"x": 0.12, "top": 0.92}, size_hint=(0.9,1))
+        scroll = ScrollView(pos_hint={"x": 0.12, "top": 0.92}, size_hint=(0.9, 1))
         layout = GridLayout(cols=5, padding=0, spacing=5)
         layout.bind(minimum_height=layout.setter("height"))
 
@@ -51,11 +50,10 @@ class SPAI(App):
         av.use_separator = False
         root.add_widget(actionbar)
 
-        #Adding the layouts together
+        # Adding the layouts together
         root.add_widget(self._sidepanel())
         root.add_widget(scroll)
         scroll.add_widget(layout)
-        #self._create_thumbs()
 
         return root
 
@@ -67,7 +65,6 @@ class SPAI(App):
         scroll.add_widget(layout)
         layout.do_layout()
 
-
     def _sidepanel(self):
         global curdir
         global sidepanel_layout
@@ -78,19 +75,17 @@ class SPAI(App):
         else:
             root.remove_widget(sidepanel_layout)
             for folders in glob(join(curdir, "*")):
-
                 name = basename(folders)
-                btn = Button(text=name, on_press=lambda n=name:self._update_scroll(n.text))
+                btn = Button(text=name, on_press=lambda n=name: self._update_scroll(n.text))
                 sidepanel_layout.add_widget(btn)
             root.add_widget(sidepanel_layout)
             sidepanel_layout.do_layout()
 
-
     def _validate(self, fileChooser):
         global curdir
         curdir = fileChooser.path
+        self._create_thumbs()
         self._sidepanel()
-
 
     def _pop(self, obj):
 
@@ -119,7 +114,7 @@ class SPAI(App):
         # 2 buttons are created for accept or cancel the current value
         btnlayout = BoxLayout(size_hint_y=None, height=50, spacing=5)
         btn = Button(text='Ok')
-        btn.bind(on_release= lambda x: self._validate(fileChooser))
+        btn.bind(on_release=lambda x: self._validate(fileChooser))
         btn.bind(on_release=popup.dismiss)
         btnlayout.add_widget(btn)
 
@@ -130,7 +125,6 @@ class SPAI(App):
 
         # all done, open the popup !
         popup.open()
-
 
     def _showphotos(self, btn):
         global layout
@@ -143,13 +137,13 @@ class SPAI(App):
         if foldername == "":
             pass
         else:
-            #Specifies the path of the main folder, the first * in the "glob(join(curdir, '*', '*'))" is the subfolder
+            # Specifies the path of the main folder, the first * in the "glob(join(curdir, '*', '*'))" is the subfolder
             # containing the images. An * is used to import from all subfolders, if there are several. The last * is the
             # image name, again * is used as a wild card.
 
             for filename in glob(join(curdir, foldername, "thumb", "*")):
                 try:
-                    canvas = BoxLayout(size_hint=(1,None))
+                    canvas = BoxLayout(size_hint=(1, None))
                     im = Image(source=filename)
                     canvas.add_widget(im)
                     layout.add_widget(canvas)
@@ -159,51 +153,74 @@ class SPAI(App):
 
         return layout
 
-
     def _create_thumbs(self):
-        curdir = "/Users/Bjarke/Desktop/Test/"
+        global curdir
+
         if platform == "darwin" or platform == "linux":
             for folder in glob(join(curdir, "*")):
                 try:
                     mkdir(folder + "/thumb/")
-                except FileExistsError:
-                    print("Thumb folder already exists")
-                    pass
-
-                for picture in glob(join(curdir, folder, "*")):
-                    picture_name = basename(picture)
-                    if picture_name == "thumb":
-                        pass
-                    else:
-                        try:
+                    for picture in glob(join(curdir, folder, "*")):
+                        picture_name = basename(picture)
+                        if picture_name == "thumb":
+                            pass
+                        else:
                             size = 128, 128
                             im = pimage.open(picture)
                             im.thumbnail(size)
                             im.save(folder + "/thumb/" + picture_name, "JPEG")
-                        except FileExistsError:
-                            print("Pictures already exists")
+
+                except FileExistsError:
+                    thumb_pictures = []
+                    for thumb in glob(join(curdir, folder + "/thumb/", "*")):
+                        thumb_pictures.append(basename(thumb))
+
+                    for picture in glob(join(curdir, folder, "*")):
+                        picture_name = basename(picture)
+                        if picture_name == "thumb":
                             pass
+
+                        elif picture_name in thumb_pictures:
+                            pass
+
+                        else:
+                            size = 128, 128
+                            im = pimage.open(picture)
+                            im.thumbnail(size)
+                            im.save(folder + "/thumb/" + picture_name, "JPEG")
+
         else:
             for folder in glob(join(curdir, "*")):
                 try:
                     mkdir(folder + r"'\thumb\'")
-                except FileExistsError:
-                    print("Thumb folder already exists")
-                    pass
-
-                for picture in glob(join(curdir, folder, "*")):
-                    picture_name = basename(picture)
-                    if picture_name == "thumb":
-                        pass
-                    else:
-                        try:
+                    for picture in glob(join(curdir, folder, "*")):
+                        picture_name = basename(picture)
+                        if picture_name == "thumb":
+                            pass
+                        else:
                             size = 128, 128
                             im = pimage.open(picture)
                             im.thumbnail(size)
                             im.save(folder + r"'\thumb\'" + picture_name, "JPEG")
-                        except FileExistsError:
-                            print("Pictures already exists")
+
+                except FileExistsError:
+                    thumb_pictures = []
+                    for thumb in glob(join(curdir, folder + r"'\thumb\'", "*")):
+                        thumb_pictures.append(basename(thumb))
+
+                    for picture in glob(join(curdir, folder, "*")):
+                        picture_name = basename(picture)
+                        if picture_name == "thumb":
                             pass
+
+                        elif picture_name in thumb_pictures:
+                            pass
+
+                        else:
+                            size = 128, 128
+                            im = pimage.open(picture)
+                            im.thumbnail(size)
+                            im.save(folder + r"'\thumb\'" + picture_name, "JPEG")
 
 
 if __name__ == "__main__":
