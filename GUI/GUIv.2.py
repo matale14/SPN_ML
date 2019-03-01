@@ -2,7 +2,6 @@ from glob import glob
 from os.path import join, basename
 from os import mkdir
 from PIL import Image as pimage
-from sys import platform
 from kivy.app import App
 from kivy.uix.image import Image
 from kivy.uix.gridlayout import GridLayout
@@ -156,71 +155,37 @@ class SPAI(App):
     def _create_thumbs(self):
         global curdir
 
-        if platform == "darwin" or platform == "linux":
-            for folder in glob(join(curdir, "*")):
-                try:
-                    mkdir(folder + "/thumb/")
-                    for picture in glob(join(curdir, folder, "*")):
-                        picture_name = basename(picture)
-                        if picture_name == "thumb":
-                            pass
-                        else:
-                            size = 128, 128
-                            im = pimage.open(picture)
-                            im.thumbnail(size)
-                            im.save(folder + "/thumb/" + picture_name, "JPEG")
+        for folder in glob(join(curdir, "*")):
+            try:
+                mkdir(join(folder + "/thumb/"))
+                for picture in glob(join(curdir, folder, "*")):
+                    picture_name = basename(picture)
+                    if picture_name == "thumb":
+                        pass
+                    else:
+                        size = 128, 128
+                        im = pimage.open(picture)
+                        im.thumbnail(size)
+                        im.save(join(folder + "/thumb/" + picture_name), "JPEG")
 
-                except FileExistsError:
-                    thumb_pictures = []
-                    for thumb in glob(join(curdir, folder + "/thumb/", "*")):
-                        thumb_pictures.append(basename(thumb))
+            except FileExistsError:
+                thumb_pictures = []
+                for thumb in glob(join(curdir, folder + "/thumb/", "*")):
+                    thumb_pictures.append(basename(thumb))
 
-                    for picture in glob(join(curdir, folder, "*")):
-                        picture_name = basename(picture)
-                        if picture_name == "thumb":
-                            pass
+                for picture in glob(join(curdir, folder, "*")):
+                    picture_name = basename(picture)
+                    if picture_name == "thumb":
+                        pass
 
-                        elif picture_name in thumb_pictures:
-                            pass
+                    elif picture_name in thumb_pictures:
+                        pass
 
-                        else:
-                            size = 128, 128
-                            im = pimage.open(picture)
-                            im.thumbnail(size)
-                            im.save(folder + "/thumb/" + picture_name, "JPEG")
-
-        else:
-            for folder in glob(join(curdir, "*")):
-                try:
-                    mkdir(folder + r"'\thumb\'")
-                    for picture in glob(join(curdir, folder, "*")):
-                        picture_name = basename(picture)
-                        if picture_name == "thumb":
-                            pass
-                        else:
-                            size = 128, 128
-                            im = pimage.open(picture)
-                            im.thumbnail(size)
-                            im.save(folder + r"'\thumb\'" + picture_name, "JPEG")
-
-                except FileExistsError:
-                    thumb_pictures = []
-                    for thumb in glob(join(curdir, folder + r"'\thumb\'", "*")):
-                        thumb_pictures.append(basename(thumb))
-
-                    for picture in glob(join(curdir, folder, "*")):
-                        picture_name = basename(picture)
-                        if picture_name == "thumb":
-                            pass
-
-                        elif picture_name in thumb_pictures:
-                            pass
-
-                        else:
-                            size = 128, 128
-                            im = pimage.open(picture)
-                            im.thumbnail(size)
-                            im.save(folder + r"'\thumb\'" + picture_name, "JPEG")
+                    else:
+                        size = 128, 128
+                        im = pimage.open(picture)
+                        im.thumbnail(size)
+                        im.save(join(folder + "/thumb/" + picture_name), "JPEG")
 
 
 if __name__ == "__main__":
