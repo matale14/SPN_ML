@@ -202,14 +202,14 @@ def filter_main(folder, h, w):
     est_camera_ref = []
     imlist=[filename for filename in allfiles if filename[-4:] in [".jpg",".JPG"]]
     for f in imlist:
-        paths = folder+f
+        paths = os.path.join(folder, f)
         i = filter(paths, int(h), int(w))
         spn = get_spn(i)
         est_camera_ref.append(spn)
         images.append(i)
-        kake = "filtered\\"
-        path_create = folder + kake
-        path_new = folder + kake + f
+        kake = "filtered"
+        path_create = os.path.join(folder, kake)
+        path_new = os.path.join(folder, kake, f)
         if not os.path.exists(path_create):
             os.makedirs(path_create)
         plt.imsave(path_new, i, cmap="gray" )
@@ -257,4 +257,4 @@ for p in lista:
 
 #filter_main('F:\\Dropbox\\Dropbox\\SPN\\lena\\', 512, 512)
 
-filter_main('F:\\Dropbox\\Dropbox\\SPN\\Monica\\', 512, 512)
+#filter_main('F:\\Dropbox\\Dropbox\\SPN\\Monica\\', 512, 512)

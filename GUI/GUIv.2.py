@@ -1,6 +1,6 @@
 from glob import glob
 from os.path import join, basename
-from os import mkdir
+from os import mkdir, walk
 from PIL import Image as pimage
 from kivy.app import App
 from kivy.uix.image import Image
@@ -13,6 +13,7 @@ from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.factory import Factory as F
+from SPAI.FILTER.filter_cy import filter_main
 
 """
 Created by: Bjarke Larsen
@@ -83,6 +84,11 @@ class SPAI(App):
     def _validate(self, fileChooser):
         global curdir
         curdir = fileChooser.path
+        for folders in glob(join(curdir, "*")):
+            if folders == "thumb":
+                pass
+            else:
+                filter_main(folders, 16, 16)
         self._create_thumbs()
         self._sidepanel()
 
@@ -160,7 +166,7 @@ class SPAI(App):
                 mkdir(join(folder + "/thumb/"))
                 for picture in glob(join(curdir, folder, "*")):
                     picture_name = basename(picture)
-                    if picture_name == "thumb":
+                    if picture_name == "thumb" or picture_name == "filtered":
                         pass
                     else:
                         size = 128, 128
@@ -175,7 +181,7 @@ class SPAI(App):
 
                 for picture in glob(join(curdir, folder, "*")):
                     picture_name = basename(picture)
-                    if picture_name == "thumb":
+                    if picture_name == "thumb" or picture_name == "filtered":
                         pass
 
                     elif picture_name in thumb_pictures:
