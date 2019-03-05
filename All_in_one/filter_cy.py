@@ -75,7 +75,6 @@ def calc_sigma(image):
     sigmas=[0, ((1/(m**2))*sigsum)]
 
     local_variance = max(sigmas)
-    print(local_variance)
     return local_variance
 
 
@@ -107,7 +106,6 @@ def wavelet(image):
                                   [sw, so, se]], dtype=np.float)
                                                                     # According to the formulas in Wu et al.
             sigma_div = sigma_0/(calc_sigma(neighbour) + sigma_0)   # get the estimated local variance for the pixel
-            print(sigma_div)
             px = d_px * sigma_div                                   # multiply subtracted CAI with the local variances
             px = int(px)                                            # Estimated camera reference SPN
             wav_image[y,x] = px
@@ -143,12 +141,21 @@ def crop_center(img, cropy, cropx):
         return img[starty:starty + cropy, startx:startx + cropx]
 
 
-def filter(img, h, w):
+def filter_main(img, hw = [512, 512]):
+    img_name = os.path.basename(img)
+    folder = os.path.dirname(img)
+    kake = "filtered"
+    path_create = os.path.join(folder, kake)
+    path_new = os.path.join(folder, kake, img_name)
+    if not os.path.exists(path_create):
+        os.makedirs(path_create)
 
+    h = hw[0]
+    w = hw[1]
     if os.path.isfile(img):
         original = cv2.imread(img, 0)                  # the 0 means read as grayscale
 
-        if h == 0 or w == 0:
+        if hw[0] == 0 or hw[1] == 0:
             h = original.shape[0]
             w = original.shape[1]
 
@@ -166,13 +173,13 @@ def filter(img, h, w):
 
         wav_image = wavelet(d_image)
 
-        return(wav_image)
+        plt.imsave(path_new, wav_image, cmap="gray" )
 
         
     else:
         print("file does not exist")
         return None
-
+"""
 def filter_main(folder, h=512, w=512):
     start_time = time.time()
     images = []
@@ -215,3 +222,4 @@ def filter_main(folder, h=512, w=512):
     print("Estimated camera reference:", (sum(est_camera_ref)/len(est_camera_ref)))
 
 #filter_main("F:\\Dropbox\\Dropbox\\SPN\\All_in_one\\Photos\\lena")
+"""

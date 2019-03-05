@@ -13,13 +13,12 @@ from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.factory import Factory as F
-from SPAI.All_in_one.image_class import Image as Filter
+from image_class import Image as Filter
 import multiprocessing as mp
 
 
 """
 Created by: Bjarke Larsen
-
 Note: I had to import glob, os, PIL and sys before all kivy modules, otherwise the photos didn't load. Haven't 
 tested if it affects the creation of the thumbnails.
 """
@@ -36,6 +35,7 @@ class SPAI(App):
         curdir = " "
         mp_queue = mp.Queue()
         # Creating the layout
+        mp.freeze_support()
         root = FloatLayout()
         scroll = ScrollView(pos_hint={"x": 0.12, "top": 0.92}, size_hint=(0.9, 1))
         layout = GridLayout(cols=5, padding=0, spacing=5)
@@ -91,6 +91,8 @@ class SPAI(App):
         global filter_queue
         curdir = fileChooser.path
         self._queue_photos()
+        mp.freeze_support()
+        print("VALIDATING PHOTOS")
         self._multiprocessing(self._handle_photos, mp_queue)
         self._sidepanel()
 
@@ -190,7 +192,8 @@ class SPAI(App):
                     else:
                         mp_queue.put([picture, folder, picture_name])
 
-    def _handle_photos(self, queue):
+    @staticmethod
+    def _handle_photos(queue):
         while True:
             try:
                 data = queue.get()
@@ -201,16 +204,24 @@ class SPAI(App):
                 im = pimage.open(picture)
                 im.thumbnail(size)
                 im.save(join(folder + "/thumb/" + picture_name), "JPEG")
-                Filter(picture)
+                Filter(picture, size)
             except:
                 break
 
     def _multiprocessing(self, function, queue):
         cpu_count = mp.cpu_count()
-        for i in range(cpu_count):
-            mp.Process(target=function, args=(queue,)).start()
-        for i in range(cpu_count):
-            queue.put("STOP")
+        try:
+            for i in range(cpu_count):
+                mp.Process(target=function, args=(queue,)).start()
+        except EOFError:
+            pass
+
+        try:
+            for i in range(cpu_count):
+                queue.put("STOP")
+        except EOFError:
+            pass
 
 if __name__ == "__main__":
+    mp.freeze_support()
     SPAI().run()

@@ -9,11 +9,13 @@ import scipy, scipy.ndimage
 
 class Image:
 
-    def __init__(self, img_path):
+    def __init__(self, img_path, hw = [512, 512]):
         self.folder_path = os.path.dirname(img_path)
         self.name = os.path.basename(img_path)
         self.image = cv2.imread(img_path, 0)
-        self.cropped_image = self.crop()
+        h = hw[0]
+        w = hw[1]
+        self.cropped_image = self.crop(h, w)
         self.cai_image = self.cai_filter()
         self.d_image = cv2.subtract(self.cropped_image, self.cai_image)
         self.wavelet_image = self.wavelet()
