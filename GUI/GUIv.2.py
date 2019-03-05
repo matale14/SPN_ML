@@ -1,6 +1,6 @@
 from glob import glob
 from os.path import join, basename
-from os import mkdir, walk
+from os import mkdir
 from PIL import Image as pimage
 from kivy.app import App
 from kivy.uix.image import Image
