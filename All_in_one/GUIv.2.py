@@ -1,6 +1,6 @@
 from glob import glob
 from os.path import join, basename
-from os import mkdir, walk
+from os import mkdir
 from PIL import Image as pimage
 from kivy.app import App
 from kivy.uix.image import Image
@@ -13,7 +13,9 @@ from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.factory import Factory as F
-from filter_cy import filter_main
+from SPAI.All_in_one.image_class import Image as Filter
+import multiprocessing as mp
+
 
 """
 Created by: Bjarke Larsen
@@ -29,8 +31,10 @@ class SPAI(App):
         global layout
         global curdir
         global root
+        global mp_queue
 
         curdir = " "
+        mp_queue = mp.Queue()
         # Creating the layout
         root = FloatLayout()
         scroll = ScrollView(pos_hint={"x": 0.12, "top": 0.92}, size_hint=(0.9, 1))
@@ -83,13 +87,11 @@ class SPAI(App):
 
     def _validate(self, fileChooser):
         global curdir
+        global mp_queue
+        global filter_queue
         curdir = fileChooser.path
-        for folders in glob(join(curdir, "*")):
-            if folders == "thumb":
-                pass
-            else:
-                filter_main(folders, 512, 512)
-        self._create_thumbs()
+        self._queue_photos()
+        self._multiprocessing(self._handle_photos, mp_queue)
         self._sidepanel()
 
     def _pop(self, obj):
@@ -158,8 +160,9 @@ class SPAI(App):
 
         return layout
 
-    def _create_thumbs(self):
+    def _queue_photos(self):
         global curdir
+        global mp_queue
 
         for folder in glob(join(curdir, "*")):
             try:
@@ -169,10 +172,7 @@ class SPAI(App):
                     if picture_name == "thumb" or picture_name == "filtered":
                         pass
                     else:
-                        size = 128, 128
-                        im = pimage.open(picture)
-                        im.thumbnail(size)
-                        im.save(join(folder + "/thumb/" + picture_name), "JPEG")
+                        mp_queue.put([picture, folder, picture_name])
 
             except FileExistsError:
                 thumb_pictures = []
@@ -188,11 +188,29 @@ class SPAI(App):
                         pass
 
                     else:
-                        size = 128, 128
-                        im = pimage.open(picture)
-                        im.thumbnail(size)
-                        im.save(join(folder + "/thumb/" + picture_name), "JPEG")
+                        mp_queue.put([picture, folder, picture_name])
 
+    def _handle_photos(self, queue):
+        while True:
+            try:
+                data = queue.get()
+                picture = data[0]
+                folder = data[1]
+                picture_name = data[2]
+                size = 128, 128
+                im = pimage.open(picture)
+                im.thumbnail(size)
+                im.save(join(folder + "/thumb/" + picture_name), "JPEG")
+                Filter(picture)
+            except:
+                break
+
+    def _multiprocessing(self, function, queue):
+        cpu_count = mp.cpu_count()
+        for i in range(cpu_count):
+            mp.Process(target=function, args=(queue,)).start()
+        for i in range(cpu_count):
+            queue.put("STOP")
 
 if __name__ == "__main__":
     SPAI().run()

@@ -139,6 +139,3 @@ class Image:
             os.makedirs(path_create)
 
         plt.imsave(save_path, self.wavelet_image, cmap="gray")
-
-
-img1 = Image("F:\\Dropbox\\Dropbox\\SPN\\All_in_one\\Photos\\lena\\lena.jpg")
