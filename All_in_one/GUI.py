@@ -35,7 +35,6 @@ class SPAI(App):
         curdir = " "
         mp_queue = mp.Queue()
         # Creating the layout
-        mp.freeze_support()
         root = FloatLayout()
         scroll = ScrollView(pos_hint={"x": 0.12, "top": 0.92}, size_hint=(0.9, 1))
         layout = GridLayout(cols=5, padding=0, spacing=5)
@@ -92,7 +91,6 @@ class SPAI(App):
         curdir = fileChooser.path
         self._queue_photos()
         mp.freeze_support()
-        print("VALIDATING PHOTOS")
         self._multiprocessing(self._handle_photos, mp_queue)
         self._sidepanel()
 
@@ -223,5 +221,4 @@ class SPAI(App):
             pass
 
 if __name__ == "__main__":
-    mp.freeze_support()
     SPAI().run()
