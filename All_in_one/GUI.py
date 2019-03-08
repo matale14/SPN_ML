@@ -137,6 +137,7 @@ class SPAI(App):
         self._multiprocessing(self._handle_photos, mp_queue)
         self._sidepanel()
 
+
     def _pop(self, obj):
         """
         Function that creates a pop-up window, where the user choses the path of the pictures to be imported.
@@ -181,6 +182,7 @@ class SPAI(App):
 
         popup.open()
 
+
     def _showphotos(self, btn):
         """
         Function to load photos and show them in the layout.
@@ -214,6 +216,7 @@ class SPAI(App):
                     print("Pictures: Unable to load <%s>" % filename)
 
         return layout
+
 
     def _queue_photos(self):
         """
@@ -254,6 +257,7 @@ class SPAI(App):
                     else:
                         mp_queue.put([picture, folder, picture_name])
 
+
     @staticmethod
     def _handle_photos(queue):
         """
@@ -286,6 +290,7 @@ class SPAI(App):
             except:
                 break
 
+
     def _multiprocessing(self, function, queue):
         """
         Function to use multiprocessing for creating thumbnails and filter images.
@@ -312,6 +317,7 @@ class SPAI(App):
                 queue.put("STOP")
         except EOFError:
             pass
+
 
 if __name__ == "__main__":
     SPAI().run()
