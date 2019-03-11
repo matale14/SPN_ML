@@ -205,7 +205,7 @@ class SPAI(App):
         if foldername == "":
             pass
         else:
-            for filename in glob(join(curdir, foldername, "thumb", "*")):
+            for filename in sorted(glob(join(curdir, foldername, "thumb", "*"))):
                 try:
                     canvas = BoxLayout(size_hint=(1, None))
                     im = Image(source=filename)
@@ -279,13 +279,14 @@ class SPAI(App):
 
                 size_thumb = 128, 128
 
+
                 # Creates a thumbnail of the picture and saves it.
                 im = pimage.open(picture)
                 im.thumbnail(size_thumb)
                 im.save(join(folder + "/thumb/" + picture_name), "JPEG")
 
                 # Filters the image.
-                Filter(picture, size)
+                Filter(picture)
 
             except:
                 break
