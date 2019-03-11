@@ -1,3 +1,38 @@
+import tensorflow as tf
+import numpy as np
+import os,glob,cv2
+import sys,argparse
+import time, operator
+from os import listdir
+from os.path import isfile, join
+import shutil
+
+
+test_data = os.listdir('spai_dataset/test')
+
+for i in range(len(test_data)):
+    test_data[i] = test_data[i][:-4]
+
+
+#test_data = sorted(test_data)
+
+infile = open('classifications.csv', 'r')
+infile.readline() # skips first line
+
+for line in infile:
+    words = line.split(',')
+    if words[1] in test_data:
+        test_labels.append(int(words[0]))
+
+# First, pass the path of the image
+#dir_path = os.path.dirname(os.path.realpath(__file__))
+#image_path=sys.argv[1]
+#filename = dir_path +'/' +image_path
+image_size=256
+num_channels=3
+results = []
+pics = []
+
 ## Let us restore the saved model
 with tf.Session(graph=tf.Graph()) as sess:
     # Step-1: Recreate the network graph. At this step only graph is created.
@@ -44,46 +79,6 @@ with tf.Session(graph=tf.Graph()) as sess:
             max_value = max(res)
             max_index = np.where(res==max_value)
             max_index = max_index[0][0]
-            if filename[0] == "A":
-                accuracy_count[a_index] += 1
-            elif filename[0] == "G":
-                accuracy_count[g_index] += 1
-            elif filename[0] == "B":
-                accuracy_count[b_index] += 1
-            elif filename[0] == "M":
-                accuracy_count[m_index] += 1
-            elif filename[0] == "W":
-                accuracy_count[w_index] += 1
-
-            if max_index == a_index and filename[0] == "A":
-                accuracy_manual[0] += 1
-                accuracy_per[a_index] += 1
-            elif max_index == g_index and filename[0] == "G":
-                accuracy_manual[0] += 1
-                accuracy_per[g_index] += 1
-            elif max_index == w_index and filename[0] == "W":
-                accuracy_manual[0] += 1
-                accuracy_per[w_index] += 1
-            elif max_index == b_index and filename[0] == "B":
-                accuracy_manual[0] += 1
-                accuracy_per[b_index] += 1
-            elif max_index == m_index and filename[0] == "M":
-                accuracy_manual[0] += 1
-                accuracy_per[m_index] += 1
-            else:
-                accuracy_manual[1] += 1
-
-
-            if max_index == 2:
-                alex_list.append(filename)
-            elif max_index == 3:
-                gabbi_list.append(filename)
-            elif max_index == 4:
-                wenche_list.append(filename)
-            elif max_index == 0:
-                bjarke_list.append(filename)
-            elif max_index == 1:
-                monica_list.append(filename)
 
     con= tf.confusion_matrix(np.array(test_labels), np.array(results), num_classes=5)
     con2 = sess.run(con)
