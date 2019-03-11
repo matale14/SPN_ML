@@ -106,7 +106,7 @@ class SPAI(App):
             return sidepanel_layout
         else:
             root.remove_widget(sidepanel_layout)
-            for folders in glob(join(curdir, "*")):
+            for folders in sorted(glob(join(curdir, "*"))):
                 name = basename(folders)
                 btn = Button(text=name, on_press=lambda n=name: self._update_scroll(n.text))
                 sidepanel_layout.add_widget(btn)
