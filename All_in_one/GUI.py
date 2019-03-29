@@ -52,7 +52,7 @@ class SPAI(App):
         # Create the ActionBar with buttons.
         actionbar = F.ActionBar(pos_hint={'top': 1})
         av = F.ActionView()
-        av.add_widget(F.ActionPrevious(title='SPAI', with_previous=False))
+        av.add_widget(F.ActionPrevious(title='SPAI', with_previous=False, app_icon="icon.png"))
         av.add_widget(F.ActionOverflow())
         av.add_widget(F.ActionButton(text='Import'.format(), on_press=self._pop))
         av.add_widget(F.ActionButton(text='Report'.format()))
