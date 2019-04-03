@@ -133,11 +133,11 @@ class SPAI(App):
         global curdir
         global mp_queue
 
-        mp.freeze_support()
         curdir = fileChooser.path
 
         #Initiates functions.
         self._queue_photos()
+        mp.freeze_support()
         self._multiprocessing(self._handle_photos, mp_queue)
         self._sidepanel()
 
@@ -283,89 +283,89 @@ class SPAI(App):
         Returns:
             Saves a thumbnail and the filtered picture in separate folders.
         """
+        while True:
+            # Retrieves one list from the queue and splits the list.
+            data = queue.get()
+            picture = data[0]
+            curdir = data[1]
 
-        # Retrieves one list from the queue and splits the list.
-        data = queue.get()
-        picture = data[0]
-        curdir = data[1]
+            picture_name = basename(picture)
 
-        picture_name = basename(picture)
+            # Filters the image.
+            Filter(picture, join(curdir, "filtered"))
 
-        # Filters the image.
-        Filter(picture, join(curdir, "filtered"))
+            # CNN
+            try:
+                f = join(curdir, "filtered", picture_name)
+                image_size = 256
+                num_channels = 3
 
-        # CNN
-        try:
-            f = join(curdir, "filtered", picture_name)
-            image_size = 256
-            num_channels = 3
+                ## Let us restore the saved model
+                with tf.Session(graph=tf.Graph()) as sess:
+                    # Step-1: Recreate the network graph. At this step only graph is created.
+                    saver = tf.train.import_meta_graph('model/spai_model.meta')
+                    # Step-2: Now let's load the weights saved using the restore method.
+                    # saver.restore(sess, tf.train.latest_checkpoint('./'))
+                    tf.global_variables_initializer().run()
+                    # Reading the image using OpenCV
+                    image = cv2.imread(f)
+                    if image is not None:
+                        images = []
+                        # Resizing the image to our desired size and preprocessing will be done exactly as done during training
+                        image = cv2.resize(image, (image_size, image_size), 0, 0, cv2.INTER_LINEAR)
+                        images.append(image)
+                        images = np.array(images, dtype=np.uint8)
+                        images = images.astype('float32')
+                        images = np.multiply(images, 1.0 / 255.0)
+                        # The input to the network is of shape [None image_size image_size num_channels]. Hence we reshape.
+                        x_batch = images.reshape(1, image_size, image_size, num_channels)
+                        graph = tf.get_default_graph()
+                        x = graph.get_tensor_by_name = "x:0"
+                        y_pred = graph.get_tensor_by_name = "y_pred:0"
 
-            ## Let us restore the saved model
-            with tf.Session(graph=tf.Graph()) as sess:
-                # Step-1: Recreate the network graph. At this step only graph is created.
-                saver = tf.train.import_meta_graph('model/spai_model.meta')
-                # Step-2: Now let's load the weights saved using the restore method.
-                # saver.restore(sess, tf.train.latest_checkpoint('./'))
-                tf.global_variables_initializer().run()
-                # Reading the image using OpenCV
-                image = cv2.imread(f)
-                if image is not None:
-                    images = []
-                    # Resizing the image to our desired size and preprocessing will be done exactly as done during training
-                    image = cv2.resize(image, (image_size, image_size), 0, 0, cv2.INTER_LINEAR)
-                    images.append(image)
-                    images = np.array(images, dtype=np.uint8)
-                    images = images.astype('float32')
-                    images = np.multiply(images, 1.0 / 255.0)
-                    # The input to the network is of shape [None image_size image_size num_channels]. Hence we reshape.
-                    x_batch = images.reshape(1, image_size, image_size, num_channels)
-                    graph = tf.get_default_graph()
-                    x = graph.get_tensor_by_name = "x:0"
-                    y_pred = graph.get_tensor_by_name = "y_pred:0"
-
-                    result = sess.run(y_pred, feed_dict={x: x_batch})
-                    res = result[0].tolist()
-                    # max_value = max(res)
-                    # max_index = np.where(res==max_value)
-                    # max_index = max_index[0][0]
-        except:
-            print("Error on CNN")
-            pass
+                        result = sess.run(y_pred, feed_dict={x: x_batch})
+                        res = result[0].tolist()
+                        # max_value = max(res)
+                        # max_index = np.where(res==max_value)
+                        # max_index = max_index[0][0]
+            except:
+                print("Error on CNN")
+                pass
 
 
-        # Saves a thumb of the picture in a folder depending on the values from the CNN
-        try:
-            size_thumb = 128, 128
-            thumb = pimage.open(picture)
-            thumb.thumbnail(size_thumb)
+            # Saves a thumb of the picture in a folder depending on the values from the CNN
+            try:
+                size_thumb = 128, 128
+                thumb = pimage.open(picture)
+                thumb.thumbnail(size_thumb)
 
-            values = (res)
-            highest_value = 0
-            print("Values for picture", picture)
-            for x in range(len(values)):
-                print("Current highest value:", highest_value)
-                if values[x] > highest_value:
-                    highest_value = values[x]
-                    print("Changing highest value to:", highest_value)
-            group = values.index(highest_value)
-            if group == 1:
-                print("Pictures belongs to Alexander")
-                thumb.save(join(curdir, "thumb", "Alexander", picture_name), "JPEG")
-            elif group == 0:
-                print("Pictures belongs to Bjarke")
-                thumb.save(join(curdir, "thumb", "Bjarke", picture_name), "JPEG")
-            elif group == 4:
-                print("Pictures belongs to Gabrielle")
-                thumb.save(join(curdir, "thumb", "Gabrielle", picture_name), "JPEG")
-            elif group == 3:
-                print("Pictures belongs to Monica")
-                thumb.save(join(curdir, "thumb", "Monica", picture_name), "JPEG")
-            elif group == 2:
-                print("Pictures belongs to Wenche")
-                thumb.save(join(curdir, "thumb", "Wenche", picture_name), "JPEG")
-        except:
-            print("Error on sorting image")
-            pass
+                values = (res)
+                highest_value = 0
+                print("Values for picture", picture)
+                for x in range(len(values)):
+                    print("Current highest value:", highest_value)
+                    if values[x] > highest_value:
+                        highest_value = values[x]
+                        print("Changing highest value to:", highest_value)
+                group = values.index(highest_value)
+                if group == 1:
+                    print("Pictures belongs to Alexander")
+                    thumb.save(join(curdir, "thumb", "Alexander", picture_name), "JPEG")
+                elif group == 0:
+                    print("Pictures belongs to Bjarke")
+                    thumb.save(join(curdir, "thumb", "Bjarke", picture_name), "JPEG")
+                elif group == 4:
+                    print("Pictures belongs to Gabrielle")
+                    thumb.save(join(curdir, "thumb", "Gabrielle", picture_name), "JPEG")
+                elif group == 3:
+                    print("Pictures belongs to Monica")
+                    thumb.save(join(curdir, "thumb", "Monica", picture_name), "JPEG")
+                elif group == 2:
+                    print("Pictures belongs to Wenche")
+                    thumb.save(join(curdir, "thumb", "Wenche", picture_name), "JPEG")
+            except:
+                print("Error on sorting image")
+                pass
 
 
     def _multiprocessing(self, function, queue):
