@@ -1,16 +1,42 @@
 from __future__ import print_function
 from skimage.io import imread
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2
 import os, time
 from PIL import Image
-from argparse import ArgumentParser
 import scipy, scipy.ndimage
 
+"""
+
+Created by Alexander Mackenzie-Low
+
+Based on:
+Xiangui Kang, Jiansheng Chen, Kerui Lin and Peng Anjie. 2014. 
+A context-adaptive SPN predictor for trustworthy source camera identification
+https://jivp-eurasipjournals.springeropen.com/articles/10.1186/1687-5281-2014-19
+"""
 
 def cai_filter(image):
+    """
+    
+    Compares every pixel in the image to those around it,
+    and uses a cai formula to change the pixel value. returns 
+    a numpy 2d array of the filtered image.
 
+    Args:
+        image: unsigned char[:, :] / numpy 2d image array
+
+        the cropped and grayscale image.
+
+    Variables:
+        unsigned char[:, :]: cai_image
+        int: no, ea, so, we, x, y, i, j, h, w, size, px, ne, nw, se, sw
+        char[8]: cai_array
+    
+    Returns:
+        unsigned char[:, :] / numpy 2d image array
+
+    """
     cai_image = np.zeros_like(image) # create an empty image with the same dimensions
     h = cai_image.shape[0]
     w = cai_image.shape[1]
@@ -32,34 +58,51 @@ def cai_filter(image):
 
             cai_array = [nw, no, ne, we, ea, sw, so, se]
 
-            if (np.max(cai_array) - np.min(cai_array)) <= 20:       # If the max number of the neighbouring pixels are less than or equal to
-                px = np.mean(cai_array)                             # 20 in value(0-255) then just set the pixel to the mean
-            elif (np.absolute(ea - we) - np.absolute(no - so)) > 20:   # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
-                px = (no + so) / 2                                    # the value is northern + southern pixel divided by 2
+            if (np.max(cai_array) - np.min(cai_array)) <= 20:           # If the max number of the neighbouring pixels are less than or equal to
+                px = np.mean(cai_array)                                 # 20 in value(0-255) then just set the pixel to the mean
+            elif (np.absolute(ea - we) - np.absolute(no - so)) > 20:    # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
+                px = (no + so) / 2                                      # the value is northern + southern pixel divided by 2
             elif (np.absolute(no - so) - np.absolute(ea - we)) > 20:
                 px = (ea + we) / 2
-            elif (np.absolute(ne - sw) - np.absolute(se - nw)) > 20:   # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
-                px = (se + nw) / 2                                    # the value is northern + southern pixel divided by 2
+            elif (np.absolute(ne - sw) - np.absolute(se - nw)) > 20:    # If the absolute value(not negative. F.ex. -5 = 5) of that is more than 20
+                px = (se + nw) / 2                                      # the value is northern + southern pixel divided by 2
             elif (np.absolute(se - nw) - np.absolute(ne - sw)) > 20:
                 px = (ne + we) / 2
             else:
-                px = np.median(cai_array)                           # Median is backup. Median just selects the item that is most in the middle.
+                px = np.median(cai_array)        # Median is backup. Median just selects the item that is most in the middle.
 
             px = int(px)
 
-            cai_image[y, x] = px            # Set the value of the current pixel to px. 
+            cai_image[y, x] = px                 # Set the value of the current pixel to px. 
 
     return cai_image
 
 
 def calc_sigma(image):
+    """
+    
+    Calculates the local variance of the pixel. A number that represents
+    the difference in values of the surrounding pixels. Returns the 
+    local variance of the pixel. Used in the wavelet Wiener filter.
+
+    Args:
+        image: unsigned char[:, :] / numpy 2d image array
+
+        The neighbourhood pixels of a certain pixel. In essence a small image
+        centered on a certain pixel.
+
+    Variables:
+        int: m, sigma_0, sigmas, local_variance, sigsum, h, w
+    
+    Returns:
+        int
+        
+    """
     d = image
     m = 3
     sigma_0 = 9
     h = d.shape[0]
     w = d.shape[1]
-    #Wu et al.
-    #http://ws.binghamton.edu/fridrich/Research/double.pdf
     #m = the neighbourhood pixels, here the 3x3 pixels around the selected pixel
     #sum the value of the neighbourhood - the overall variance of the SPN.
     #Select the max value, so if the value is negative, it returns a black(empty) pixel
@@ -79,6 +122,25 @@ def calc_sigma(image):
 
 
 def wavelet(image):
+    """
+    
+    A wavelet Wiener filter designed to detect edges and smooth
+    them out. Returns the filtered image as a numpy 2d array.
+
+    Args:
+        image: unsigned char[:, :] / numpy 2d image array
+        
+        The cropped and grayscale image minus the CAI filtered image
+        essentially leaving just the sensor pattern noise.
+
+    Variables:
+        int: sigma_0, h, w, size, j, d_px, px, sigma_div, no, ne, nw, so, se, sw, ea, we
+        unsigned char[:, :]: d, wav_image, neighbour / numpy 2d image array
+    
+    Returns:
+        unsigned char[:, :] / numpy 2d image array
+        
+    """
     d = image
     sigma_0 = 9
 
@@ -112,24 +174,27 @@ def wavelet(image):
 
     return wav_image
 
-def get_spn(wav_image):
-
-    try:
-        average = wav_image[wav_image!=0].mean()    #average all the noise and add them 
-        return average
-    except Exception as e:
-        print(e)
-
 def crop_center(img, cropy, cropx):
-    """
-    :param img: array
-        2D input data to be cropped
-    :param cropx: int
-        x axis of the pixel amount to be cropped
-    :param cropy: int
-        y axis of the pixel amount to be cropped
-    :return:
-        return cropped image 2d data array.
+"""
+    
+    Crop image to specifications. Filter takes a decent while, running on
+    512x512 and smaller is reccomended. Returns a cropped image.
+
+    Args:
+        img: unsigned char[:, :] / numpy 2d image array
+        cropy: int
+        cropx: int
+
+        img is the original grayscale image.
+        The two crop parameters are the width and height.
+
+    Variables:
+        int: cropx, cropy, startx, starty
+        unsigned char[:, :]: img
+    
+    Returns:
+        unsigned char[:, :] / numpy 2d image array
+        
     """
     if cropx == 0 or cropy == 0:
         return img
@@ -142,6 +207,28 @@ def crop_center(img, cropy, cropx):
 
 
 def filter_main(img, hw = [512, 512]):
+    """
+    
+    Sends the image on its journey through all the filters.
+    Returns the complete sensor pattern noise image.
+
+    Args:
+        img: string
+        h: int
+        w: int
+
+        img is the full path to the image.
+        h and w are height and width of the wanted cropping,
+        leave 0 for full size.
+
+    Variables:
+        int: h, w
+        unsigned char[:, :]: original, cropped, cai_image, d_image, wav_image
+    
+    Returns:
+        unsigned char[:, :] / numpy 2d image array
+        
+    """
     img_name = os.path.basename(img)
     folder = os.path.dirname(img)
     kake = "filtered"
@@ -179,47 +266,3 @@ def filter_main(img, hw = [512, 512]):
     else:
         print("file does not exist")
         return None
-"""
-def filter_main(folder, h=512, w=512):
-    start_time = time.time()
-    images = []
-    j = 0
-    onlyfiles = next(os.walk(folder))[2] #dir is your directory path as string
-    allfiles=os.listdir(folder)
-    size = len(onlyfiles)
-    est_camera_ref = []
-    imlist=[filename for filename in allfiles if filename[-4:] in [".jpg",".JPG"]]
-
-    for f in imlist:
-        paths = os.path.join(folder, f)
-        i = filter(paths, int(h), int(w))
-        spn = get_spn(i)
-        est_camera_ref.append(spn)
-        images.append(i)
-        kake = "filtered"
-        path_create = os.path.join(folder, kake)
-        path_new = os.path.join(folder, kake, f)
-        if not os.path.exists(path_create):
-            os.makedirs(path_create)
-        plt.imsave(path_new, i, cmap="gray" )
-        during_time = time.time() - start_time
-        progress = round((j / size) * 100, 1)
-        progressbar = int(progress / 4)
-        frogress = "{0:.2f}".format(progress)
-        elapse = "{0:.2f}".format(during_time)
-        
-        if j != 0:
-            est_time = "{0:.2f}".format((during_time/j)*(size-j))
-        else:
-            est_time = "{0:.2f}".format(progress*size)
-        
-        print('\r|{}|{}% Time elapsed: {}, estimate: {}'.format(("█" * progressbar), frogress, elapse, est_time), end="", flush=True)
-        j += 1
-
-    elapsed_time = time.time() - start_time
-    print('\r|{}|{}%'.format(("█" * 25), 100), end="", flush=True)
-    print("\nTime taken:", elapsed_time)
-    print("Estimated camera reference:", (sum(est_camera_ref)/len(est_camera_ref)))
-
-#filter_main("F:\\Dropbox\\Dropbox\\SPN\\All_in_one\\Photos\\lena")
-"""
