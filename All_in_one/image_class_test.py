@@ -11,9 +11,7 @@ class Image:
 
     def __init__(self, img_path, filter_path, hw = [256, 256]):
         self.folder_path = filter_path
-        print("Filter, Filter path", self.folder_path)
         self.name = os.path.basename(img_path)
-        print("Filter, Image name", self.name)
         self.image = cv2.imread(img_path, 0)
         h = hw[0]
         w = hw[1]
