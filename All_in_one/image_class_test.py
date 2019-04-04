@@ -7,9 +7,43 @@ import os, time
 from PIL import Image
 import scipy, scipy.ndimage
 
+"""
+
+Created by Alexander Mackenzie-Low
+
+Based on:
+Xiangui Kang, Jiansheng Chen, Kerui Lin and Peng Anjie. 2014. 
+A context-adaptive SPN predictor for trustworthy source camera identification
+https://jivp-eurasipjournals.springeropen.com/articles/10.1186/1687-5281-2014-19
+"""
+
 class Image:
 
-    def __init__(self, img_path, filter_path, hw: list = [256, 256]):
+    def __init__(self, img_path, filter_path, hw: list = [512, 512]):
+        """
+    
+        Sends the image on its journey through all the filters.
+        Returns the complete sensor pattern noise image.
+
+        Args:
+            img_path: string
+            filter_path: string
+            h: int
+            w: int
+
+            img_path is the full path to the image.
+            filter_path is path to save
+            h and w are height and width of the wanted cropping,
+            leave 0 for full size.
+
+        Variables:
+            int: h, w
+            unsigned char[:, :]: original, cropped, cai_image, d_image, wav_image
+        
+        Returns:
+            unsigned char[:, :] / numpy 2d image array
+            
+        """
         self.folder_path = filter_path
         self.name = os.path.basename(img_path)
         self.image = cv2.imread(img_path, 0)
@@ -23,6 +57,27 @@ class Image:
 
 
     def crop(self, cropx: int = 512, cropy: int = 512):
+        """
+    
+        Crop image to specifications. Filter takes a decent while, running on
+        512x512 and smaller is reccomended. Returns a cropped image.
+
+        Args:
+            img: unsigned char[:, :] / numpy 2d image array
+            cropy: int
+            cropx: int
+
+            img is the original grayscale image.
+            The two crop parameters are the width and height.
+
+        Variables:
+            int: cropx, cropy, startx, starty
+            unsigned char[:, :]: img
+        
+        Returns:
+            unsigned char[:, :] / numpy 2d image array
+            
+        """
         if cropx == 0 or cropy == 0:
             return self.image
         else:
@@ -33,7 +88,26 @@ class Image:
             return self.image[starty:starty + cropy, startx:startx + cropx]
 
     def cai_filter(self):
+        """
+    
+        Compares every pixel in the image to those around it,
+        and uses a cai formula to change the pixel value. returns 
+        a numpy 2d array of the filtered image.
 
+        Args:
+            image: unsigned char[:, :] / numpy 2d image array
+
+            the cropped and grayscale image.
+
+        Variables:
+            unsigned char[:, :]: cai_image
+            int: no, ea, so, we, x, y, i, j, h, w, size, px, ne, nw, se, sw
+            char[8]: cai_array
+        
+        Returns:
+            unsigned char[:, :] / numpy 2d image array
+
+        """
         cai_image = np.zeros_like(self.cropped_image) # create an empty image with the same dimensions
         img = self.cropped_image
         h = cai_image.shape[0]
@@ -77,6 +151,25 @@ class Image:
 
     @staticmethod
     def calc_sigma(image):
+        """
+    
+        Calculates the local variance of the pixel. A number that represents
+        the difference in values of the surrounding pixels. Returns the 
+        local variance of the pixel. Used in the wavelet Wiener filter.
+
+        Args:
+            image: unsigned char[:, :] / numpy 2d image array
+
+            The neighbourhood pixels of a certain pixel. In essence a small image
+            centered on a certain pixel.
+
+        Variables:
+            int: m, sigma_0, sigmas, local_variance, sigsum, h, w
+        
+        Returns:
+            int
+            
+        """
         d = image
         m = 3
         sigma_0 = 9
@@ -101,6 +194,25 @@ class Image:
         return local_variance
 
     def wavelet(self):
+        """
+    
+        A wavelet Wiener filter designed to detect edges and smooth
+        them out. Returns the filtered image as a numpy 2d array.
+
+        Args:
+            image: unsigned char[:, :] / numpy 2d image array
+            
+            The cropped and grayscale image minus the CAI filtered image
+            essentially leaving just the sensor pattern noise.
+
+        Variables:
+            int: sigma_0, h, w, size, j, d_px, px, sigma_div, no, ne, nw, so, se, sw, ea, we
+            unsigned char[:, :]: d, wav_image, neighbour / numpy 2d image array
+        
+        Returns:
+            unsigned char[:, :] / numpy 2d image array
+            
+        """
         d = self.d_image
         sigma_0 = 9
 
@@ -135,4 +247,9 @@ class Image:
         return wav_image
 
     def save_image(self):
+        """
+        
+        Saves the image to the correct path
+    
+        """
         plt.imsave(os.path.join(self.folder_path, self.name), self.wavelet_image, cmap="gray")

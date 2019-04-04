@@ -9,9 +9,23 @@ import shutil
 import time
 
 def cnn_guesser(folder):
+    """
+    Args:
+        Folder: string
+        
+        The path to the current folder
 
-    #filter_path = os.path.join(folder, "Photos", "Filtered")
-    filter_path = folder
+    Variables:
+        int: h, w
+        unsigned char[:, :]: original, cropped, cai_image, d_image, wav_image
+    
+    Returns:
+        List: A list containing lists containing a full path to an image and the value guesses
+        from the cnn.
+
+    """
+    filter_path = os.path.join(folder, "Filtered")
+    #filter_path = folder
     onlyfiles = [f for f in listdir(filter_path) if isfile(join(filter_path, f))]
 
 
@@ -198,11 +212,14 @@ if __name__ == "__main__":
 
     print("Correct: {} Wrong: {}".format(accuracy_manual[0], accuracy_manual[1]))
     print("Accuracy:", accuracy_manual[0]/total, "\n")
-    print("Alex: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[a_index], (accuracy_count[a_index]-accuracy_per[a_index]), (accuracy_per[a_index]/accuracy_count[a_index])))
-    print("Gabbi: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[g_index], (accuracy_count[g_index]-accuracy_per[g_index]), (accuracy_per[g_index]/accuracy_count[g_index])))
-    print("Bjarke: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[b_index], (accuracy_count[b_index]-accuracy_per[b_index]), (accuracy_per[b_index]/accuracy_count[b_index])))
-    print("Monica: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[m_index], (accuracy_count[m_index]-accuracy_per[m_index]), (accuracy_per[m_index]/accuracy_count[m_index])))
-    print("Wenche: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[w_index], (accuracy_count[w_index]-accuracy_per[w_index]), (accuracy_per[w_index]/accuracy_count[w_index])))
+    try:
+        print("Alex: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[a_index], (accuracy_count[a_index]-accuracy_per[a_index]), (accuracy_per[a_index]/accuracy_count[a_index])))
+        print("Gabbi: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[g_index], (accuracy_count[g_index]-accuracy_per[g_index]), (accuracy_per[g_index]/accuracy_count[g_index])))
+        print("Bjarke: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[b_index], (accuracy_count[b_index]-accuracy_per[b_index]), (accuracy_per[b_index]/accuracy_count[b_index])))
+        print("Monica: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[m_index], (accuracy_count[m_index]-accuracy_per[m_index]), (accuracy_per[m_index]/accuracy_count[m_index])))
+        print("Wenche: Correct: {} Wrong: {} Accuracy: {}".format(accuracy_per[w_index], (accuracy_count[w_index]-accuracy_per[w_index]), (accuracy_per[w_index]/accuracy_count[w_index])))
+    except:
+        pass
     print()
     print("Alex pic results: A:{} B:{} G:{} M:{} W:{}".format(alex_pic[a_index], alex_pic[b_index], alex_pic[g_index], alex_pic[m_index], alex_pic[w_index]))
     print("Gabbi pic results: A:{} B:{} G:{} M:{} W:{}".format(gabbi_pic[a_index], gabbi_pic[b_index], gabbi_pic[g_index], gabbi_pic[m_index], gabbi_pic[w_index]))

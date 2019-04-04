@@ -1,0 +1,103 @@
+from reportlab.lib.pagesizes import *
+from reportlab.pdfgen import canvas
+from reportlab.lib.enums import TA_JUSTIFY
+from reportlab.platypus import *
+from reportlab.lib.styles import *
+from reportlab.lib.units import *
+from reportlab.lib.colors import PCMYKColor
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+
+def addPageNumber(canvas, doc):
+    """
+    Add page number
+
+    """
+    page_num = canvas.getPageNumber()
+    text = "Page #%s" % page_num
+    canvas.drawRightString(200*mm, 20*mm, text)
+
+def createMultiPage(reportname, casenmbr, createdby, comparison):
+    """
+    Create a multipage document
+
+    """
+    doc = SimpleDocTemplate("SPAIreport.pdf", pagesize=A4,
+                        rightMargin=72, leftMargin=72,
+                        topMargin=72, bottomMargin=18)
+
+
+    # creating a Story where elements are added in the order they will appear in the document
+    Story = []
+
+    # creating variables for the different elements
+    logo = "icon.png"  #used as an example, needs to be updated with the right path
+    introtext = ("SPAI compares photos on their Sensor Pattern Noise(SPN), by filtering all images to reveal the "
+             "SPN of each image. A specialized machine learning algorithm compares all filtered images based "
+             "on their SPN, and groups them by photos with a similarity above xxxx % SPN.  SPN is a noise created "
+             "by the sensor in the camera. By comparing photos by the pattern of the sensor noise, photos can "
+             "be group by which sensor took the given photo. All sensors are individual, even by same manufacturer "
+             "and model, thereby gives a unique noise pattern in each photo.")
+
+    im = Image(logo, 2*cm, 2*cm)
+    Story.append(im)
+
+    Story.append(Spacer(1, 12))
+
+    # adding report details
+    styles=getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+    ptext = '<font size=24>%s</font>' % reportname
+    Story.append(Paragraph(ptext, styles["Normal"]))
+    Story.append(Spacer(1, 24))
+
+    styles=getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+    ptext = '<font size=14>%s</font>' % casenmbr
+    Story.append(Paragraph(ptext, styles["Normal"]))
+    Story.append(Spacer(1, 12))
+
+    styles=getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+    ptext = '<font size=14>%s</font>' % createdby
+    Story.append(Paragraph(ptext, styles["Normal"]))
+    Story.append(Spacer(1, 12))
+
+    Story.append(Spacer(1, 24))
+
+    # inserting introduction text
+    styles=getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+    ptext = '<font size=12>%s</font>' % introtext
+    Story.append(Paragraph(ptext, styles["Normal"]))
+
+    Story.append(Spacer(1, 24))
+
+    # Adding the chart
+    styles=getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+    ptext = '<font size=18>%s</font>' % comparison
+    Story.append(Paragraph(ptext, styles["Normal"]))
+
+    Story.append(Spacer(1, 12))
+
+    d = Drawing(280, 250)
+    bar = VerticalBarChart()
+    bar.x = 50
+    bar.y = 85
+    data = [99, 92, 78, 95, 50, 0],
+
+    bar.data = data
+    bar.categoryAxis.categoryNames = ['G 1', 'G 2', 'G 3',
+                                      'G 4', 'G 5']
+
+    bar.bars[0].fillColor = PCMYKColor(0, 100, 100, 40, alpha=85)
+
+    d.add(bar, '')
+
+    Story.append(d)
+
+    doc.build(Story, onFirstPage=addPageNumber, onLaterPages=addPageNumber)
+
+if __name__ == "__main__":
+    createMultiPage()

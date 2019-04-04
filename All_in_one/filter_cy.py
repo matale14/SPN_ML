@@ -174,7 +174,7 @@ def wavelet(image):
     return wav_image
 
 def crop_center(img, cropy, cropx):
-"""
+    """
     
     Crop image to specifications. Filter takes a decent while, running on
     512x512 and smaller is reccomended. Returns a cropped image.
