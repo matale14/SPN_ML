@@ -1,4 +1,3 @@
-from __future__ import print_function
 from skimage.io import imread
 import numpy as np
 import cv2
