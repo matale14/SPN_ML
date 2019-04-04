@@ -57,7 +57,7 @@ def cnn_guesser(folder):
 
                 result=sess.run(y_pred, feed_dict={x: x_batch})
                 res = result[0]
-                combiner = [image, res]
+                combiner = [os.path.join(filter_path,filename), res]
                 results.append(combiner)
 
 
