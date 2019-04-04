@@ -377,6 +377,7 @@ class SPAI(App):
 
             # Filters the image.
             Filter(picture, join(curdir, "filtered"))
+            print(basename(picture), "is filtered.")
 
     def _cnn(self, obj):
         """
