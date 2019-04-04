@@ -13,6 +13,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
+from kivy.uix.progressbar import ProgressBar
 from kivy.factory import Factory as F
 from image_class_test import Image as Filter
 import multiprocessing as mp
@@ -25,7 +26,6 @@ import cv2
 Created by: Bjarke Larsen, Monica Romset & Alexander Mackenzie-Low
 Version 3
 """
-
 
 class SPAI(App):
     """
@@ -57,7 +57,7 @@ class SPAI(App):
         # Create the ActionBar with buttons.
         actionbar = F.ActionBar(pos_hint={'top': 1})
         av = F.ActionView()
-        av.add_widget(F.ActionPrevious(title='SPAI', with_previous=False))
+        av.add_widget(F.ActionPrevious(title='SPAI', with_previous=False, app_icon="icon.png"))
         av.add_widget(F.ActionOverflow())
         av.add_widget(F.ActionButton(text='Import'.format(), on_press=self._pop))
         av.add_widget(F.ActionButton(text='Report'.format()))
@@ -119,6 +119,17 @@ class SPAI(App):
             sidepanel_layout.do_layout()
 
 
+    def pg_bar(self, max: int = 100):
+        global progress
+
+        progress_bar = ProgressBar(max=max)
+        popup = Popup(title="Filtering and sorting pictures",
+                      content=progress_bar)
+        progress_bar.value = progress
+
+        popup.open()
+
+
     def _validate(self, fileChooser):
         """
         Function to add the path chosen by user to "curdir" and initiate functions that needs to be run.
@@ -132,12 +143,16 @@ class SPAI(App):
         """
         global curdir
         global mp_queue
+        global progress
+        global number_of_pictures
 
         curdir = fileChooser.path
+        progress = 0
 
         #Initiates functions.
         self._queue_photos()
         mp.freeze_support()
+        #self.pg_bar(number_of_pictures)
         self._multiprocessing(self._handle_photos, mp_queue)
         self._sidepanel()
 
@@ -232,6 +247,9 @@ class SPAI(App):
         """
         global curdir
         global mp_queue
+        global number_of_pictures
+
+        number_of_pictures = 0
 
         for root, dirs, files in walk(curdir):
             for file in files:
@@ -241,6 +259,8 @@ class SPAI(App):
                     file_path = join(root, file)
                     data = [file_path, curdir]
                     mp_queue.put(data)
+                    number_of_pictures += 1
+                    print(number_of_pictures)
                     print("Queued:", file_path)
 
         try:
@@ -283,6 +303,7 @@ class SPAI(App):
         Returns:
             Saves a thumbnail and the filtered picture in separate folders.
         """
+
         while True:
             # Retrieves one list from the queue and splits the list.
             data = queue.get()
@@ -297,6 +318,7 @@ class SPAI(App):
             # CNN
             try:
                 f = join(curdir, "filtered", picture_name)
+                filter_path = join(curdir, "filtered")
                 image_size = 256
                 num_channels = 3
 
@@ -305,9 +327,10 @@ class SPAI(App):
                     # Step-1: Recreate the network graph. At this step only graph is created.
                     saver = tf.train.import_meta_graph('model/spai_model.meta')
                     # Step-2: Now let's load the weights saved using the restore method.
-                    # saver.restore(sess, tf.train.latest_checkpoint('./'))
-                    tf.global_variables_initializer().run()
+                    saver.restore(sess, tf.train.latest_checkpoint('model/'))
+                    # tf.initialize_all_variables().run()
                     # Reading the image using OpenCV
+
                     image = cv2.imread(f)
                     if image is not None:
                         images = []
@@ -325,9 +348,6 @@ class SPAI(App):
 
                         result = sess.run(y_pred, feed_dict={x: x_batch})
                         res = result[0].tolist()
-                        # max_value = max(res)
-                        # max_index = np.where(res==max_value)
-                        # max_index = max_index[0][0]
             except:
                 print("Error on CNN")
                 pass
@@ -340,14 +360,10 @@ class SPAI(App):
                 thumb.thumbnail(size_thumb)
 
                 values = (res)
-                highest_value = 0
-                print("Values for picture", picture)
-                for x in range(len(values)):
-                    print("Current highest value:", highest_value)
-                    if values[x] > highest_value:
-                        highest_value = values[x]
-                        print("Changing highest value to:", highest_value)
+                print("Values:", values)
+                highest_value = max(values)
                 group = values.index(highest_value)
+
                 if group == 1:
                     print("Pictures belongs to Alexander")
                     thumb.save(join(curdir, "thumb", "Alexander", picture_name), "JPEG")
@@ -387,13 +403,6 @@ class SPAI(App):
                 mp.Process(target=function, args=(queue,)).start()
         except EOFError:
             pass
-
-        # When queue is empty, "STOP" is sent to the queue to stop all threads, and release them.
-        #try:
-         #   for i in range(cpu_count):
-          #      queue.put("STOP")
-        #except EOFError:
-         #   pass
 
 
 if __name__ == "__main__":

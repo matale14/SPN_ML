@@ -9,7 +9,7 @@ import scipy, scipy.ndimage
 
 class Image:
 
-    def __init__(self, img_path, filter_path, hw = [256, 256]):
+    def __init__(self, img_path, filter_path, hw: list = [256, 256]):
         self.folder_path = filter_path
         self.name = os.path.basename(img_path)
         self.image = cv2.imread(img_path, 0)
@@ -22,7 +22,7 @@ class Image:
         self.save_image()
 
 
-    def crop(self, cropx = 512, cropy = 512):
+    def crop(self, cropx: int = 512, cropy: int = 512):
         if cropx == 0 or cropy == 0:
             return self.image
         else:
