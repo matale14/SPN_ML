@@ -28,7 +28,6 @@ def cnn_guesser(folder):
     num_channels=3
     results = []
     combiner = []
-    pics = []
 
 
     ## Let us restore the saved model
@@ -37,7 +36,6 @@ def cnn_guesser(folder):
         saver = tf.train.import_meta_graph('model/spai_model.meta')
         # Step-2: Now let's load the weights saved using the restore method.
         saver.restore(sess, tf.train.latest_checkpoint('model/'))
-        #tf.initialize_all_variables().run()
         # Reading the image using OpenCV
         for filename in sorted(os.listdir(filter_path)):
             image = cv2.imread(os.path.join(filter_path,filename))
@@ -80,9 +78,9 @@ if __name__ == "__main__":
     accuracy_count = [0, 0, 0, 0, 0]
 
     cnn_results = cnn_guesser("F:\\Dropbox\\Dropbox\\spai_dataset\\test")
-    print(cnn_results)
     for key in cnn_results:
-        filename = key[0]
+        filepath = key[0]
+        filename = os.path.basename(filepath)
         res = key[1]
         max_value = max(res)
         max_index = np.where(res==max_value)
