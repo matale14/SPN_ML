@@ -311,6 +311,25 @@ class SPAI(App):
 
 
     def _cnn(self, obj):
+        """
+        
+        Goes through the filtered images and runs them through the CNN.
+        Outputs the results in a detailed manner. And saves the images to correct folders.
+
+        Args:
+            self: the class object
+            obj: as it is used as a button
+
+        Variables:
+            The different x_index are too check which device the image is most likely to belong to
+            as the result array is of the format: [n, n, n, n, n] where n are floats representing percentage.
+            So a float of 0.87 would represent an 87% chance that the picture belongs to that index.
+        
+        Returns:
+            nothing, it saves the images locally.
+
+        """
+
         global curdir
         cnn_list = cnn_guesser(curdir)
         a_index = 1
@@ -326,15 +345,28 @@ class SPAI(App):
         accuracy_manual = [0, 0]
         accuracy_per = [0, 0, 0, 0, 0]
         accuracy_count = [0, 0, 0, 0, 0]
+        
+        thumb_imgs = []
+        for root, dirnames, filenames in os.walk(curdir):
+            for filename in filenames:
+                thumb_imgs.append(os.path.join(root, filename))
+
+        thumb_imgs = [ x for x in thumb_imgs if "filtered" not in x ]
+        thumb_imgs = [ x for x in thumb_imgs if "thumb" not in x ]
+        
 
         cnn_results = cnn_list
         for key in cnn_results:
+            #Read the result, separate into what index the cnn guessed most likely
             filepath = key[0]
             filename = os.path.basename(filepath)
             res = key[1]
             max_value = max(res)
             max_index = np.where(res==max_value)
             max_index = max_index[0][0]
+
+            #run it through result analytics.
+
             if filename[0] == "A":
                 accuracy_count[a_index] += 1
             elif filename[0] == "G":
@@ -366,10 +398,14 @@ class SPAI(App):
 
             try:
                 size_thumb = 128, 128
-                thumb = pimage.open(filepath)
-                thumb.thumbnail(size_thumb)
 
+                for s in thumb_imgs:
+                    if filename in s:
+                        thumb_path = s
+                        thumb = pimage.open(thumb_path)
+                        thumb.thumbnail(size_thumb)
 
+                #save to the correct folder.
                 if max_index == a_index:
                     print("Pictures belongs to Alexander")
                     thumb.save(join(curdir, "thumb", "Alexander", filename), "JPEG")
@@ -477,6 +513,7 @@ class SPAI(App):
         print("Bjarke pic results: A:{} B:{} G:{} M:{} W:{}".format(bjarke_pic[a_index], bjarke_pic[b_index], bjarke_pic[g_index], bjarke_pic[m_index], bjarke_pic[w_index]))
         print("Monica pic results: A:{} B:{} G:{} M:{} W:{}".format(monica_pic[a_index], monica_pic[b_index], monica_pic[g_index], monica_pic[m_index], monica_pic[w_index]))
         print("Wenche pic results: A:{} B:{} G:{} M:{} W:{}".format(wenche_pic[a_index], wenche_pic[b_index], wenche_pic[g_index], wenche_pic[m_index], wenche_pic[w_index]))
+
 
 
     def _multiprocessing(self, function, queue):
