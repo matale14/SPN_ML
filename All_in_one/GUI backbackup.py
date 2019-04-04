@@ -26,7 +26,7 @@ import os
 
 
 """
-Created by: Bjarke Larsen, Monica Romset & Alexander Mackenzie-Low
+Created by: Bjarke Larsen, Alexander Mackenzie-Low & Monica Romset
 Version 3
 """
 
@@ -79,6 +79,14 @@ class SPAI(App):
         return root
 
     def _report(self, obj):
+        """
+        Function to create input values to the report.
+        Args:
+            obj: passes from the button to activate this function. Not used.
+
+        Returns:
+            Creates a report using the imported "createMultiPage" report funcion.
+        """
         reportname = "Report test"
         casenmbr = "001"
         createdby = "Gang of Five"
@@ -105,8 +113,8 @@ class SPAI(App):
 
     def _sidepanel(self):
         """
-        Function to create the sidepanel in the root layout. It reads all the folders from "curdir", and
-        creates a button for each folder in "curdir". The sidepanel layout is then updated to show the buttons.
+        Function to create the sidepanel in the root layout. It reads all the folders from "curdir/thumb", and
+        creates a button for each folder in "curdir/thumb". The sidepanel layout is then updated to show the buttons.
         Returns:
             Returs the sidepanel layout to the root layout.
         """
@@ -116,7 +124,7 @@ class SPAI(App):
         #Create the sidepanel layout.
         sidepanel_layout = BoxLayout(orientation="vertical", pos_hint={"x": 0.0, "top": 0.92}, size_hint=(0.1, 0.92))
 
-        #If "curdir" contains folders, a button is created for each, and bind the button to update the
+        #If "curdir/thumb" contains folders, a button is created for each, and bind the button to update the
         # showphotos layout.
 
         if curdir == " ":
@@ -133,14 +141,13 @@ class SPAI(App):
 
     def _validate(self, fileChooser):
         """
-        Function to add the path chosen by user to "curdir" and initiate functions that needs to be run.
+        Function to add the path chosen by user as "curdir" and initiate the functions to queue and filter the photos.
 
         Args:
             fileChooser: Takes the path chosen by the user.
 
         Returns:
             None, but initiates several other functions.
-
         """
         global curdir
         global mp_queue
@@ -154,9 +161,9 @@ class SPAI(App):
 
     def _pop(self, obj):
         """
-        Function that creates a pop-up window, where the user choses the path of the pictures to be imported.
+        Function that creates a pop-up window, where the user chooses the path of the pictures to be imported.
         Args:
-            obj: Is needed by the FileChooser class.
+            obj: Is passed by the button activating it, not used.
 
         Returns:
             A string containing the path chosen by the user.
@@ -235,10 +242,10 @@ class SPAI(App):
     def _queue_photos(self):
         """
         Function to add photos to the queue of the multiprocessing function.
-
+        Creates all working folders, as a folder for thumbnails. In that folder a folder for each class of pictures,
+        that the CNN is guessing between. And a folder to store the filtered images.
         Returns:
-            Adds a list containing strings to the queue. Strings of paths to the picture and folder, and
-            name of the picture.
+            Adds a list containing strings to the queue. Strings of: paths of picture and curdir.
         """
         global curdir
         global mp_queue
@@ -285,13 +292,13 @@ class SPAI(App):
     @staticmethod
     def _handle_photos(queue):
         """
-        Handles all actions of each picture. Creating a thumbnail, and starts the filtering of each picture.
+        Retrieves each image from a multiprocessing queue and starts the filtering process of each image.
         Args:
             queue: Multiprocessing.queue is given, containing a list of strings, with the path to
             the picture, the folder and name of the picture.
 
         Returns:
-            Saves a thumbnail and the filtered picture in separate folders.
+            Saves a thumbnail and the filtered picture in the previously created "filtered" folder.
         """
         while True:
             # Retrieves one list from the queue and splits the list.
@@ -299,11 +306,10 @@ class SPAI(App):
             picture = data[0]
             curdir = data[1]
 
-            picture_name = basename(picture)
-
             # Filters the image.
             Filter(picture, join(curdir, "filtered"))
-          
+
+
     def _cnn(self, obj):
         global curdir
         cnn_list = cnn_guesser(curdir)
@@ -475,13 +481,13 @@ class SPAI(App):
 
     def _multiprocessing(self, function, queue):
         """
-        Function to use multiprocessing for creating thumbnails and filter images.
+        Function to use multiprocessing for any given function.
         Args:
             function: The current function to run on each processor.
-            queue: multiprossessing.queue format queue, to get data to process from.
+            queue: multiprossessing.queue format queue, to get data to process in the function.
 
         Returns:
-            Runs a function on each processor/thread of the cpu, to speed up processing time.
+            Depends on the function executed.
         """
         # Counts number of threads on the processor.
         cpu_count = mp.cpu_count()
@@ -492,13 +498,6 @@ class SPAI(App):
                 mp.Process(target=function, args=(queue,)).start()
         except EOFError:
             pass
-
-        # When queue is empty, "STOP" is sent to the queue to stop all threads, and release them.
-        #try:
-         #   for i in range(cpu_count):
-          #      queue.put("STOP")
-        #except EOFError:
-         #   pass
 
 
 if __name__ == "__main__":
